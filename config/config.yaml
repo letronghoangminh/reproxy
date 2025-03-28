@@ -1,0 +1,22 @@
+listeners:
+  - host: ["localhost:2211"]
+    handlers:
+      - path: "/static"
+        static_response:
+          status: 200
+          body: "Hello, World!"
+
+      - path: "/files"
+        static_files:
+          root: "/Users/hoangminh/Code/reproxy"
+          index_files: ["index.html"]
+
+  - host: ["psycholog1st.local:2210"]
+    handlers:
+      - path: "/reverse"
+        reverse_proxy:
+          upstreams: ["localhost:8080"]
+
+global:
+  port: 2209
+  log_level: info
