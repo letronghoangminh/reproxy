@@ -15,7 +15,11 @@ listeners:
     handlers:
       - path: "/reverse"
         reverse_proxy:
-          upstreams: ["localhost:8080"]
+          upstreams: ["http://localhost:8080", "https://example.com:8080"]
+          load_balancing:
+            strategy: round_robin
+            retries: 3
+            try_interval: 30
 
 global:
   port: 2209

@@ -8,17 +8,23 @@ import (
 	"strings"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
-	"github.com/letronghoangminh/reproxy/pkg/models"
+	"github.com/letronghoangminh/reproxy/pkg/services"
 	"go.uber.org/zap"
 )
 
+type ListenerController struct {
+	Server *http.ServeMux
+	Port int
+	TargetHandler map[string][]config.HandlerConfig
+}
+
 var (
-	listenerControllers map[int]models.ListenerController
+	listenerControllers map[int]ListenerController
 )
 
 func InitListenerControllers() {
 	logger = zap.L()
-	listenerControllers = map[int]models.ListenerController{}
+	listenerControllers = map[int]ListenerController{}
 
 	logger.Info("parsing listener configs")
 	listeners := combineListener()
@@ -32,7 +38,7 @@ func InitListenerControllers() {
 		_, ok := listenerControllers[port]
 		if !ok {
 			logger.Info("initializing new listener controller", zap.Int("port", port))
-			listenerControllers[port] = models.ListenerController{
+			listenerControllers[port] = ListenerController{
 				Server:        http.NewServeMux(),
 				Port:          port,
 				TargetHandler: map[string][]config.HandlerConfig{},
@@ -98,6 +104,7 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(handler.StaticResponse.Body))
 				return
 			case handler.StaticFiles.Root != "":
+				// TODO: explicit prefix path
 				cleanPath := path.Clean(strings.TrimPrefix(r.URL.Path, handler.Path))
 				for strings.HasPrefix(cleanPath, "..") || strings.HasPrefix(cleanPath, "/") {
 					cleanPath = strings.TrimPrefix(cleanPath, "..")
@@ -108,6 +115,8 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 				http.ServeFile(w, r, filePath)
 				return
 			case handler.ReverseProxy.Upstreams != nil:
+				logger.Debug("serving reverse proxy", zap.Strings("upstream", handler.ReverseProxy.Upstreams))
+				services.HandleReverseProxyRequest(&w, r, &handler)
 				return
 			}
 		}
