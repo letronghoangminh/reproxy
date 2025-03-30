@@ -13,8 +13,8 @@ import (
 )
 
 type ListenerController struct {
-	Server *http.ServeMux
-	Port int
+	Server        *http.ServeMux
+	Port          int
 	TargetHandler map[string][]config.HandlerConfig
 }
 
@@ -29,7 +29,7 @@ func InitListenerControllers() {
 	logger.Info("parsing listener configs")
 	listeners := combineListener()
 
-	for host, handlers  := range listeners {
+	for host, handlers := range listeners {
 		logger.Info("constructing listener controllers")
 
 		port, _ := strconv.Atoi(strings.Split(host, ":")[1])
@@ -116,7 +116,7 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			case handler.ReverseProxy.Upstreams != nil:
 				logger.Debug("serving reverse proxy", zap.Strings("upstream", handler.ReverseProxy.Upstreams))
-				services.HandleReverseProxyRequest(&w, r, &handler)
+				services.HandleReverseProxyRequest(w, r, &handler)
 				return
 			}
 		}

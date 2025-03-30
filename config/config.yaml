@@ -20,6 +20,11 @@ listeners:
             strategy: round_robin
             retries: 3
             try_interval: 30
+          add_headers:
+            X-Real-IP: "{remote_ip}"
+          remove_headers:
+            - "X-Test-Header1"
+            - "X-Test-Header2"
 
 global:
   port: 2209

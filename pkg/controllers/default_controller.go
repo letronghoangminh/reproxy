@@ -11,12 +11,12 @@ import (
 
 var (
 	logger *zap.Logger
-	cfg *config.Config
+	cfg    *config.Config
 )
 
 func retrieveConfig(w http.ResponseWriter, r *http.Request) {
 	logger.Info("requesting for retrieving server config", zap.String("method", r.Method), zap.String("path", r.URL.Path))
-	
+
 	jsonCfg, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
 		logger.Error("error occurred while marshalling config", zap.Error(err))

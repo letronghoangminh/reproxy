@@ -31,11 +31,11 @@ func main() {
 	cfg := config.GetConfig()
 
 	logger := logger.NewLogger(*cfg)
-	
+
 	defer logger.Sync()
 
 	logger.Info("config loaded successfully for reproxy")
-	
+
 	go controllers.DefaultControllerServe()
 	go controllers.InitListenerControllers()
 

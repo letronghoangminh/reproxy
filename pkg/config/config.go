@@ -21,12 +21,12 @@ type GlobalConfig struct {
 }
 
 type ListenerConfig struct {
-	Host     []string       `mapstructure:"host" validate:"required,dive,hostname_port"`
+	Host     []string        `mapstructure:"host" validate:"required,dive,hostname_port"`
 	Handlers []HandlerConfig `mapstructure:"handlers" validate:"required,dive"`
 }
 
 type HandlerConfig struct {
-	Path           string              `mapstructure:"path" validate:"required"`
+	Path           string               `mapstructure:"path" validate:"required"`
 	StaticResponse StaticResponseConfig `mapstructure:"static_response"`
 	StaticFiles    StaticFilesConfig    `mapstructure:"static_files"`
 	ReverseProxy   ReverseProxyConfig   `mapstructure:"reverse_proxy"`
@@ -43,12 +43,14 @@ type StaticFilesConfig struct {
 }
 
 type ReverseProxyConfig struct {
-	Upstreams      []string           `mapstructure:"upstreams" validate:"omitempty,dive,required,url"`
-	LoadBalancing  LoadBalancingConfig `mapstructure:"load_balancing" validate:"omitempty"`
+	Upstreams     []string            `mapstructure:"upstreams" validate:"omitempty,dive,required,url"`
+	LoadBalancing LoadBalancingConfig `mapstructure:"load_balancing" validate:"omitempty"`
+	AddHeaders    map[string]string   `mapstructure:"add_headers" validate:"omitempty,dive"`
+	RemoveHeaders []string            `mapstructure:"remove_headers" validate:"omitempty,dive"`
 }
 
 type LoadBalancingConfig struct {
-	Strategy    string `mapstructure:"strategy" validate:"omitempty,oneof=round_robin weighted_round_robin random ip_hash uri_hash"`
+	Strategy    string `mapstructure:"strategy" validate:"omitempty,oneof=round_robin random ip_hash uri_hash"`
 	Retries     int    `mapstructure:"retries" default:"3" validate:"omitempty,gte=0,lte=10"`
 	TryInterval int    `mapstructure:"try_interval" default:"5" validate:"omitempty,gte=0,lte=60"`
 }
