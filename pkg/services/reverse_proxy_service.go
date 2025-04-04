@@ -1,33 +1,83 @@
 package services
 
 import (
-	"io"
-	"math/rand"
+	"context"
+	"net"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"strings"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
-	"github.com/letronghoangminh/reproxy/pkg/utils"
+	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
+	loadbalancer "github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/load_balancer"
+	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/serverpool"
 	"go.uber.org/zap"
 )
 
+// Reverse proxy implementation credits to https://github.com/leonardo5621/golang-load-balancer
+
 var (
-	/*
-		{
-			"&handler1": {
-				"upstream1": 1
-				"upstream2": 2
-			}
-			"&handler2": {
-				"upstream3": 1
-			}
-		}
-	*/
-	// Storing request counts for each upstream to implement load balancing
-	// across multiple handlers
-	loadBalancingStates             = map[*config.HandlerConfig]map[string]int{}
+	loadBalancers = map[*config.HandlerConfig]loadbalancer.LoadBalancer{}
 	logger              *zap.Logger = zap.L()
 )
+
+func StartLoadBalancers(handlers []*config.HandlerConfig) {
+	for _, handler := range handlers {
+		serverPool, err := serverpool.NewServerPool(serverpool.GetLBStrategy(handler.ReverseProxy.LoadBalancing.Strategy))
+		if err != nil {
+			logger.Error("error occurred while creating server pool", zap.Error(err))
+			return
+		}
+	
+		loadBalancer := loadbalancer.NewLoadBalancer(serverPool)
+
+		for _, u := range handler.ReverseProxy.Upstreams {
+			endpoint, err := url.Parse(u)
+			if err != nil {
+				logger.Fatal(err.Error(), zap.String("URL", u))
+			}
+
+			rp := httputil.NewSingleHostReverseProxy(endpoint)
+
+			backendServer := backend.NewBackend(endpoint, rp)
+			rp.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, e error) {
+				logger.Error("error handling the request",
+					zap.String("host", endpoint.Host),
+					zap.Error(e),
+				)
+				backendServer.SetAlive(false)
+	
+				if !loadbalancer.AllowRetry(request) {
+					logger.Info(
+						"Max retry attempts reached, terminating",
+						zap.String("address", request.RemoteAddr),
+						zap.String("path", request.URL.Path),
+					)
+					http.Error(writer, "Service not available", http.StatusServiceUnavailable)
+					return
+				}
+	
+				logger.Info(
+					"Attempting retry",
+					zap.String("address", request.RemoteAddr),
+					zap.String("URL", request.URL.Path),
+					zap.Bool("retry", true),
+				)
+				loadBalancer.Serve(
+					writer,
+					request.WithContext(
+						context.WithValue(request.Context(), loadbalancer.RETRY_ATTEMPTED, true),
+					),
+				)
+			}
+	
+			serverPool.AddBackend(backendServer)
+		}
+
+		loadBalancers[handler] = loadBalancer
+	}
+}
 
 func HandleReverseProxyRequest(w http.ResponseWriter, r *http.Request, handler *config.HandlerConfig) {
 	if handler.ReverseProxy.Upstreams == nil || len(handler.ReverseProxy.Upstreams) == 0 {
@@ -35,51 +85,20 @@ func HandleReverseProxyRequest(w http.ResponseWriter, r *http.Request, handler *
 		return
 	}
 
-	if _, ok := loadBalancingStates[handler]; !ok {
-		loadBalancingStates[handler] = make(map[string]int)
-		for _, upstream := range handler.ReverseProxy.Upstreams {
-			loadBalancingStates[handler][upstream] = 0
-		}
+	loadBalancer := loadBalancers[handler]
+	if loadBalancer == nil {
+		http.Error(w, "Load balancer not found", http.StatusInternalServerError)
+		return
 	}
 
 	addHeaders(r, handler.ReverseProxy.AddHeaders)
 	removeHeaders(r, handler.ReverseProxy.RemoveHeaders)
-	upstream := getNextUpstream(handler, r)
 
-	logger.Debug("selected upstream", zap.String("upstream", upstream))
-
-	doProxyRequest(r, w, upstream)
-
-	loadBalancingStates[handler][upstream]++
-}
-
-func getNextUpstream(handler *config.HandlerConfig, r *http.Request) string {
-	upstreams := handler.ReverseProxy.Upstreams
-	var nextUpstream string
-
-	switch handler.ReverseProxy.LoadBalancing.Strategy {
-	case "round_robin":
-		for upstream, count := range loadBalancingStates[handler] {
-			if count < loadBalancingStates[handler][nextUpstream] {
-				nextUpstream = upstream
-			}
-		}
-	case "random":
-		nextUpstream = upstreams[rand.Intn(len(upstreams))]
-	case "ip_hash":
-		clientIp := strings.Split(r.RemoteAddr, ":")[0]
-		ipHash := utils.Hash(clientIp)
-		nextUpstream = upstreams[ipHash%uint32(len(upstreams))]
-	case "uri_hash":
-		uriHash := utils.Hash(r.URL.Path)
-		nextUpstream = upstreams[uriHash%uint32(len(upstreams))]
-	default:
-		nextUpstream = upstreams[0]
+	if handler.Path != "" {
+		r.URL.Path = strings.TrimPrefix(r.URL.Path, handler.Path)
 	}
 
-	loadBalancingStates[handler][nextUpstream]++
-
-	return nextUpstream
+	loadBalancer.Serve(w, r)
 }
 
 func removeHeaders(r *http.Request, headers []string) {
@@ -100,7 +119,13 @@ func addHeaders(r *http.Request, headers map[string]string) {
 
 func replaceHeaderValue(r *http.Request, value string) string {
 	replacements := map[string]string{
-		"{remote_ip}":  strings.Split(r.RemoteAddr, ":")[0],
+		"{remote_ip}": func() string {
+			host, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				return r.RemoteAddr
+			}
+			return host
+		}(),
 		"{scheme}":     r.URL.Scheme,
 		"{host}":       r.Host,
 		"{path}":       r.URL.Path,
@@ -115,33 +140,4 @@ func replaceHeaderValue(r *http.Request, value string) string {
 	}
 
 	return result
-}
-
-func doProxyRequest(r *http.Request, w http.ResponseWriter, upstream string) {
-	proxyReq, err := http.NewRequest(r.Method, upstream+r.URL.Path, r.Body)
-	if err != nil {
-		logger.Error("error occurred while creating proxy request", zap.Error(err))
-		http.Error(w, "error occurred while creating proxy request", http.StatusInternalServerError)
-		return
-	}
-	proxyReq.Header = r.Header
-
-	logger.Debug("proxying request", zap.String("method", proxyReq.Method), zap.String("url", proxyReq.URL.String()))
-
-	client := &http.Client{}
-	resp, err := client.Do(proxyReq)
-	if err != nil {
-		logger.Error("error occurred while sending request to upstream", zap.Error(err))
-		http.Error(w, "error occurred while sending request to upstream", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	logger.Debug("received response from upstream", zap.Int("status_code", resp.StatusCode))
-
-	if _, err := io.Copy(w, resp.Body); err != nil {
-		logger.Error("error occurred while copying response body", zap.Error(err))
-		http.Error(w, "error occurred while copying response body", http.StatusInternalServerError)
-		return
-	}
 }

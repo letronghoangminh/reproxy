@@ -15,7 +15,7 @@ import (
 type ListenerController struct {
 	Server        *http.ServeMux
 	Port          int
-	TargetHandler map[string][]config.HandlerConfig
+	TargetHandler map[string][]*config.HandlerConfig
 }
 
 var (
@@ -25,6 +25,7 @@ var (
 func InitListenerControllers() {
 	logger = zap.L()
 	listenerControllers = map[int]ListenerController{}
+	reverseProxyHandlers := []*config.HandlerConfig{}
 
 	logger.Info("parsing listener configs")
 	listeners := combineListener()
@@ -41,13 +42,22 @@ func InitListenerControllers() {
 			listenerControllers[port] = ListenerController{
 				Server:        http.NewServeMux(),
 				Port:          port,
-				TargetHandler: map[string][]config.HandlerConfig{},
+				TargetHandler: map[string][]*config.HandlerConfig{},
 			}
 			listenerControllers[port].Server.HandleFunc("/", defaultHandler)
 		}
 
-		listenerControllers[port].TargetHandler[hostname] = handlers
+		handlerPointers := make([]*config.HandlerConfig, len(handlers))
+		for i := range handlers {
+			handlerPointers[i] = &handlers[i]
+			if handlers[i].ReverseProxy.Upstreams != nil {
+				reverseProxyHandlers = append(reverseProxyHandlers, &handlers[i])
+			}
+		}
+		listenerControllers[port].TargetHandler[hostname] = handlerPointers
 	}
+
+	services.StartLoadBalancers(reverseProxyHandlers)
 
 	for port, listenerController := range listenerControllers {
 		go func() {
@@ -84,8 +94,14 @@ func combineListener() map[string][]config.HandlerConfig {
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	logger.Info("requesting coming", zap.String("path", r.URL.Path), zap.String("host", r.Host))
 
-	port, _ := strconv.Atoi(strings.Split(r.Host, ":")[1])
-	host := strings.Split(r.Host, ":")[0]
+	var port int; var host string
+
+	if strings.Contains(r.Host, ":") {
+		port, _ = strconv.Atoi(strings.Split(r.Host, ":")[1])
+		host = strings.Split(r.Host, ":")[0]
+	} else {
+		host = r.Host
+	}
 
 	listenerController := listenerControllers[port]
 	handlers, ok := listenerController.TargetHandler[host]
@@ -104,7 +120,6 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(handler.StaticResponse.Body))
 				return
 			case handler.StaticFiles.Root != "":
-				// TODO: explicit prefix path
 				cleanPath := path.Clean(strings.TrimPrefix(r.URL.Path, handler.Path))
 				for strings.HasPrefix(cleanPath, "..") || strings.HasPrefix(cleanPath, "/") {
 					cleanPath = strings.TrimPrefix(cleanPath, "..")
@@ -116,7 +131,7 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			case handler.ReverseProxy.Upstreams != nil:
 				logger.Debug("serving reverse proxy", zap.Strings("upstream", handler.ReverseProxy.Upstreams))
-				services.HandleReverseProxyRequest(w, r, &handler)
+				services.HandleReverseProxyRequest(w, r, handler)
 				return
 			}
 		}

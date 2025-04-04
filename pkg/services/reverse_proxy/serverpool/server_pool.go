@@ -60,6 +60,18 @@ func NewServerPool(strategy LBStrategy) (ServerPool, error) {
 		return &lcServerPool{
 			backends: make([]backend.Backend, 0),
 		}, nil
+	case Random:
+		return &randomServerPool{
+			backends: make([]backend.Backend, 0),
+		}, nil
+	// case IPHash:
+	// 	return &ipHashServerPool{
+	// 		backends: make([]backend.Backend, 0),
+	// 	}, nil
+	// case URIHash:
+	// 	return &uriHashServerPool{
+	// 		backends: make([]backend.Backend, 0),
+	// 	}, nil
 	default:
 		return nil, fmt.Errorf("Invalid strategy")
 	}
