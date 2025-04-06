@@ -13,6 +13,7 @@ import (
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
 	loadbalancer "github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/load_balancer"
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/serverpool"
+	"github.com/letronghoangminh/reproxy/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -20,14 +21,13 @@ import (
 
 var (
 	loadBalancers = map[*config.HandlerConfig]loadbalancer.LoadBalancer{}
-	logger              *zap.Logger = zap.L()
 )
 
 func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 	for _, handler := range handlers {
 		serverPool, err := serverpool.NewServerPool(serverpool.GetLBStrategy(handler.ReverseProxy.LoadBalancing.Strategy))
 		if err != nil {
-			logger.Error("error occurred while creating server pool", zap.Error(err))
+			utils.Logger.Error("error occurred while creating server pool", zap.Error(err))
 			return
 		}
 	
@@ -36,23 +36,21 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 		for _, u := range handler.ReverseProxy.Upstreams {
 			endpoint, err := url.Parse(u)
 			if err != nil {
-				logger.Fatal(err.Error(), zap.String("URL", u))
+				utils.Logger.Fatal(err.Error(), zap.String("URL", u))
 			}
 
 			rp := httputil.NewSingleHostReverseProxy(endpoint)
 
 			backendServer := backend.NewBackend(endpoint, rp)
 			rp.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, e error) {
-				logger = zap.L()
-
-				logger.Error("error handling the request",
+				utils.Logger.Error("error handling the request",
 					zap.String("host", endpoint.Host),
 					zap.Error(e),
 				)
 				backendServer.SetAlive(false)
 	
 				if !loadbalancer.AllowRetry(request, handler.ReverseProxy.LoadBalancing.Retries) {
-					logger.Info(
+					utils.Logger.Info(
 						"Max retry attempts reached, terminating",
 						zap.String("address", request.RemoteAddr),
 						zap.String("path", request.URL.Path),
@@ -66,7 +64,7 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 					currentCount = 0
 				}
 	
-				logger.Info(
+				utils.Logger.Info(
 					"Attempting retry",
 					zap.String("address", request.RemoteAddr),
 					zap.String("URL", request.URL.Path),

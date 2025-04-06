@@ -11,6 +11,7 @@ import (
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"github.com/letronghoangminh/reproxy/pkg/services"
+	"github.com/letronghoangminh/reproxy/pkg/utils"
 	"go.uber.org/zap"
 )
 
@@ -25,22 +26,21 @@ var (
 )
 
 func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
-	logger = zap.L()
 	listenerControllers = map[int]ListenerController{}
 	reverseProxyHandlers := []*config.HandlerConfig{}
 
-	logger.Info("parsing listener configs")
+	utils.Logger.Info("parsing listener configs")
 	listeners := combineListener()
 
 	for host, handlers := range listeners {
-		logger.Info("constructing listener controllers")
+		utils.Logger.Info("constructing listener controllers")
 
 		port, _ := strconv.Atoi(strings.Split(host, ":")[1])
 		hostname := strings.Split(host, ":")[0]
 
 		_, ok := listenerControllers[port]
 		if !ok {
-			logger.Info("initializing new listener controller", zap.Int("port", port))
+			utils.Logger.Info("initializing new listener controller", zap.Int("port", port))
 			listenerControllers[port] = ListenerController{
 				Server:        http.NewServeMux(),
 				Port:          port,
@@ -70,17 +70,17 @@ func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 		
 		wg.Add(1)
 		go func() {
-			logger.Info("serving new controller", zap.Int("port", port))
+			utils.Logger.Info("serving new controller", zap.Int("port", port))
 			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				logger.Error(fmt.Sprintf("error occurred while serving controller on port %d", port), zap.Error(err))
+				utils.Logger.Error(fmt.Sprintf("error occurred while serving controller on port %d", port), zap.Error(err))
 			}
 		}()
 		
 		go func() {
 			<-ctx.Done()
-			logger.Info("shutting down controller", zap.Int("port", port))
+			utils.Logger.Info("shutting down controller", zap.Int("port", port))
 			if err := server.Shutdown(context.Background()); err != nil {
-				logger.Error(fmt.Sprintf("error shutting down controller on port %d", port), zap.Error(err))
+				utils.Logger.Error(fmt.Sprintf("error shutting down controller on port %d", port), zap.Error(err))
 			}
 			wg.Done()
 		}()
@@ -109,7 +109,7 @@ func combineListener() map[string][]config.HandlerConfig {
 }
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
-	logger.Info("requesting coming", zap.String("path", r.URL.Path), zap.String("host", r.Host))
+	utils.Logger.Info("requesting coming", zap.String("path", r.URL.Path), zap.String("host", r.Host))
 
 	var port int; var host string
 
@@ -143,11 +143,11 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 					cleanPath = strings.TrimPrefix(cleanPath, "/")
 				}
 				filePath := path.Join(handler.StaticFiles.Root, cleanPath)
-				logger.Debug("serving static file", zap.String("filePath", filePath))
+				utils.Logger.Debug("serving static file", zap.String("filePath", filePath))
 				http.ServeFile(w, r, filePath)
 				return
 			case handler.ReverseProxy.Upstreams != nil:
-				logger.Debug("serving reverse proxy", zap.Strings("upstream", handler.ReverseProxy.Upstreams))
+				utils.Logger.Debug("serving reverse proxy", zap.Strings("upstream", handler.ReverseProxy.Upstreams))
 				services.HandleReverseProxyRequest(w, r, handler)
 				return
 			}

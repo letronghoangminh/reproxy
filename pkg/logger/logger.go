@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
+	"github.com/letronghoangminh/reproxy/pkg/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -38,6 +39,7 @@ func NewLogger(cfg config.Config) *zap.Logger {
 
 	logger := zap.New(core, zap.AddCaller())
 	zap.ReplaceGlobals(logger)
+	utils.Logger = logger
 	return logger
 }
 
