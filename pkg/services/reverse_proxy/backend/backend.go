@@ -13,6 +13,7 @@ type Backend interface {
 	GetURL() *url.URL
 	GetActiveConnections() int
 	Serve(http.ResponseWriter, *http.Request)
+	AddCookie(*http.Cookie)
 }
 
 type backend struct {
@@ -21,6 +22,7 @@ type backend struct {
 	mux          sync.RWMutex
 	connections  int
 	reverseProxy *httputil.ReverseProxy
+	cookies 	 []*http.Cookie
 }
 
 func (b *backend) GetActiveConnections() int {
@@ -57,7 +59,18 @@ func (b *backend) Serve(rw http.ResponseWriter, req *http.Request) {
 	b.mux.Lock()
 	b.connections++
 	b.mux.Unlock()
+
+	for _, cookie := range b.cookies {
+		http.SetCookie(rw, cookie)
+	}
+
 	b.reverseProxy.ServeHTTP(rw, req)
+}
+
+func (b *backend) AddCookie(cookie *http.Cookie) {
+	b.mux.Lock()
+	b.cookies = append(b.cookies, cookie)
+	b.mux.Unlock()
 }
 
 func NewBackend(u *url.URL, rp *httputil.ReverseProxy) Backend {

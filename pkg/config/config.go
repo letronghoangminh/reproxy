@@ -50,7 +50,7 @@ type ReverseProxyConfig struct {
 }
 
 type LoadBalancingConfig struct {
-	Strategy    string `mapstructure:"strategy" validate:"omitempty,oneof=round_robin random ip_hash uri_hash"`
+	Strategy    string `mapstructure:"strategy" validate:"omitempty,oneof=round_robin random ip_hash uri_hash sticky"`
 	Retries     int    `mapstructure:"retries" default:"3" validate:"omitempty,gte=0,lte=10"`
 	TryInterval int    `mapstructure:"try_interval" default:"5" validate:"omitempty,gte=0,lte=60"`
 }

@@ -8,6 +8,7 @@ const (
 	Random
 	IPHash
 	URIHash
+	Sticky
 )
 
 func GetLBStrategy(strategy string) LBStrategy {
@@ -20,6 +21,8 @@ func GetLBStrategy(strategy string) LBStrategy {
 		return IPHash
 	case "uri_hash":
 		return URIHash
+	case "sticky":
+		return Sticky
 	default:
 		return RoundRobin
 	}

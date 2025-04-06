@@ -3,7 +3,7 @@ package serverpool
 import (
 	"context"
 	"fmt"
-	"sync"
+	"net/http"
 	"time"
 
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
@@ -13,44 +13,9 @@ import (
 
 type ServerPool interface {
 	GetBackends() []backend.Backend
-	GetNextValidPeer() backend.Backend
+	GetNextValidPeer(r *http.Request) backend.Backend
 	AddBackend(backend.Backend)
 	GetServerPoolSize() int
-}
-
-type roundRobinServerPool struct {
-	backends []backend.Backend
-	mux      sync.RWMutex
-	current  int
-}
-
-func (s *roundRobinServerPool) Rotate() backend.Backend {
-	s.mux.Lock()
-	s.current = (s.current + 1) % s.GetServerPoolSize()
-	s.mux.Unlock()
-	return s.backends[s.current]
-}
-
-func (s *roundRobinServerPool) GetNextValidPeer() backend.Backend {
-	for i := 0; i < s.GetServerPoolSize(); i++ {
-		nextPeer := s.Rotate()
-		if nextPeer.IsAlive() {
-			return nextPeer
-		}
-	}
-	return nil
-}
-
-func (s *roundRobinServerPool) GetBackends() []backend.Backend {
-	return s.backends
-}
-
-func (s *roundRobinServerPool) AddBackend(b backend.Backend) {
-	s.backends = append(s.backends, b)
-}
-
-func (s *roundRobinServerPool) GetServerPoolSize() int {
-	return len(s.backends)
 }
 
 func HealthCheck(ctx context.Context, s ServerPool) {
@@ -95,14 +60,19 @@ func NewServerPool(strategy LBStrategy) (ServerPool, error) {
 		return &randomServerPool{
 			backends: make([]backend.Backend, 0),
 		}, nil
-	// case IPHash:
-	// 	return &ipHashServerPool{
-	// 		backends: make([]backend.Backend, 0),
-	// 	}, nil
-	// case URIHash:
-	// 	return &uriHashServerPool{
-	// 		backends: make([]backend.Backend, 0),
-	// 	}, nil
+	case IPHash:
+		return &ipServerPool{
+			backends: make([]backend.Backend, 0),
+		}, nil
+	case URIHash:
+		return &uriServerPool{
+			backends: make([]backend.Backend, 0),
+		}, nil
+	case Sticky:
+		return &stickyServerPool{
+			backends: make([]backend.Backend, 0),
+			current:  0,
+		}, nil
 	default:
 		return nil, fmt.Errorf("Invalid strategy")
 	}

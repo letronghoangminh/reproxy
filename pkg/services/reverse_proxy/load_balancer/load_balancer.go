@@ -28,7 +28,7 @@ type loadBalancer struct {
 }
 
 func (lb *loadBalancer) Serve(w http.ResponseWriter, r *http.Request) {
-	peer := lb.serverPool.GetNextValidPeer()
+	peer := lb.serverPool.GetNextValidPeer(r)
 	if peer != nil {
 		peer.Serve(w, r)
 		return

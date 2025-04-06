@@ -17,7 +17,7 @@ listeners:
         reverse_proxy:
           upstreams: ["http://localhost:8081", "http://localhost:8082", "http://localhost:8083"]
           load_balancing:
-            strategy: round_robin
+            strategy: sticky
             retries: 5
             try_interval: 10
           add_headers:
@@ -28,4 +28,4 @@ listeners:
 
 global:
   port: 2209
-  log_level: debug
+  log_level: info

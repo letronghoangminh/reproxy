@@ -1,9 +1,10 @@
 package serverpool
 
 import (
-	"sync"
 	"math/rand"
-	
+	"net/http"
+	"sync"
+
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
 )
 
@@ -12,7 +13,7 @@ type randomServerPool struct {
 	mux      sync.RWMutex
 }
 
-func (s *randomServerPool) GetNextValidPeer() backend.Backend {
+func (s *randomServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 

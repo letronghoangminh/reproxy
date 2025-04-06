@@ -1,6 +1,7 @@
 package serverpool
 
 import (
+	"net/http"
 	"sync"
 
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
@@ -11,7 +12,7 @@ type lcServerPool struct {
 	mux      sync.RWMutex
 }
 
-func (s *lcServerPool) GetNextValidPeer() backend.Backend {
+func (s *lcServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
 	var leastConnectedPeer backend.Backend
 	for _, b := range s.backends {
 		if b.IsAlive() {
