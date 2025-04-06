@@ -7,12 +7,14 @@ import (
 )
 
 const (
-	RETRY_ATTEMPTED int = 0
+	RETRY_COUNT string = "retry_count"
 )
 
-func AllowRetry(r *http.Request) bool {
-	if _, ok := r.Context().Value(RETRY_ATTEMPTED).(bool); ok {
-		return false
+func AllowRetry(r *http.Request, maxRetries int) bool {
+	if retryCount := r.Context().Value(RETRY_COUNT); retryCount != nil {
+		if count, ok := retryCount.(int); ok {
+			return count < maxRetries
+		}
 	}
 	return true
 }

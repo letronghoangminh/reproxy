@@ -18,8 +18,8 @@ listeners:
           upstreams: ["http://localhost:8081", "http://localhost:8082", "http://localhost:8083"]
           load_balancing:
             strategy: round_robin
-            retries: 3
-            try_interval: 30
+            retries: 5
+            try_interval: 10
           add_headers:
             X-Real-IP: "{remote_ip}"
           remove_headers:
@@ -28,4 +28,4 @@ listeners:
 
 global:
   port: 2209
-  log_level: info
+  log_level: debug

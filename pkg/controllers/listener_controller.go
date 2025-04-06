@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"github.com/letronghoangminh/reproxy/pkg/services"
@@ -22,7 +24,7 @@ var (
 	listenerControllers map[int]ListenerController
 )
 
-func InitListenerControllers() {
+func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 	logger = zap.L()
 	listenerControllers = map[int]ListenerController{}
 	reverseProxyHandlers := []*config.HandlerConfig{}
@@ -57,15 +59,30 @@ func InitListenerControllers() {
 		listenerControllers[port].TargetHandler[hostname] = handlerPointers
 	}
 
-	services.StartLoadBalancers(reverseProxyHandlers)
+	services.StartLoadBalancers(ctx, reverseProxyHandlers)
 
 	for port, listenerController := range listenerControllers {
+		port := port
+		server := &http.Server{
+			Addr:    fmt.Sprintf(":%d", port),
+			Handler: listenerController.Server,
+		}
+		
+		wg.Add(1)
 		go func() {
 			logger.Info("serving new controller", zap.Int("port", port))
-			err := http.ListenAndServe(fmt.Sprintf(":%d", port), listenerController.Server)
-			if err != nil {
-				logger.Error(fmt.Sprintf("error occurred while serving new controller on port %d", port), zap.Error(err))
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				logger.Error(fmt.Sprintf("error occurred while serving controller on port %d", port), zap.Error(err))
 			}
+		}()
+		
+		go func() {
+			<-ctx.Done()
+			logger.Info("shutting down controller", zap.Int("port", port))
+			if err := server.Shutdown(context.Background()); err != nil {
+				logger.Error(fmt.Sprintf("error shutting down controller on port %d", port), zap.Error(err))
+			}
+			wg.Done()
 		}()
 	}
 }

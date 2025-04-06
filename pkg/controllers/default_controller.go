@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"go.uber.org/zap"
@@ -27,16 +29,34 @@ func retrieveConfig(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonCfg)
 }
 
-func DefaultControllerServe() {
+func DefaultControllerServe(ctx context.Context, wg *sync.WaitGroup) {
 	cfg = config.GetConfig()
 	logger = zap.L()
+	port := cfg.Global.Port
 
 	http.HandleFunc("/config", retrieveConfig)
 
-	logger.Info("default controller is serving", zap.Int("port", cfg.Global.Port))
+	logger.Info("default controller is serving", zap.Int("port", port))
 
-	err := http.ListenAndServe(fmt.Sprintf(":%v", cfg.Global.Port), nil)
-	if err != nil {
-		logger.Error("error occurred while serving default controller", zap.Error(err))
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%v", port),
+		Handler: nil,
 	}
+
+	wg.Add(1)
+	go func() {
+		logger.Info("serving default controller", zap.Int("port", port))
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error(fmt.Sprintf("error occurred while serving default controller on port %d", port), zap.Error(err))
+		}
+	}()
+	
+	go func() {
+		<-ctx.Done()
+		logger.Info("shutting down default controller", zap.Int("port", port))
+		if err := server.Shutdown(context.Background()); err != nil {
+			logger.Error(fmt.Sprintf("error shutting down default controller on port %d", port), zap.Error(err))
+		}
+		wg.Done()
+	}()
 }

@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"github.com/letronghoangminh/reproxy/pkg/controllers"
@@ -36,8 +41,22 @@ func main() {
 
 	logger.Info("config loaded successfully for reproxy")
 
-	go controllers.DefaultControllerServe()
-	go controllers.InitListenerControllers()
+	ctx, stop := signal.NotifyContext(
+		context.Background(),
+		os.Interrupt,
+		syscall.SIGTERM | syscall.SIGINT | syscall.SIGQUIT,
+	)
+	defer stop()
 
-	select {}
+	wg := &sync.WaitGroup{}
+
+	go controllers.DefaultControllerServe(ctx, wg)
+	go controllers.InitListenerControllers(ctx, wg)
+
+	select {
+	case <-ctx.Done():
+		wg.Wait()
+		logger.Info("all listeners have been shut down")
+		stop()
+	}
 }

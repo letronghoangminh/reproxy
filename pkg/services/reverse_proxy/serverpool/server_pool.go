@@ -1,10 +1,17 @@
 package serverpool
 
 import (
+	"context"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
+	"go.uber.org/zap"
+)
+
+var (
+	logger *zap.Logger = zap.L()
 )
 
 type ServerPool interface {
@@ -47,6 +54,35 @@ func (s *roundRobinServerPool) AddBackend(b backend.Backend) {
 
 func (s *roundRobinServerPool) GetServerPoolSize() int {
 	return len(s.backends)
+}
+
+func HealthCheck(ctx context.Context, s ServerPool) {
+	logger := zap.L()
+
+	aliveChannel := make(chan bool, 1)
+
+	for _, b := range s.GetBackends() {
+		requestCtx, stop := context.WithTimeout(ctx, 10 * time.Second)
+		defer stop()
+		status := "up"
+		go backend.IsBackendAlive(requestCtx, aliveChannel, b.GetURL())
+
+		select {
+		case <-ctx.Done():
+			logger.Info("Gracefully shutting down health check")
+			return
+		case alive := <-aliveChannel:
+			b.SetAlive(alive)
+			if !alive {
+				status = "down"
+			}
+		}
+		logger.Debug(
+			"URL Status",
+			zap.String("URL", b.GetURL().String()),
+			zap.String("status", status),
+		)
+	}
 }
 
 func NewServerPool(strategy LBStrategy) (ServerPool, error) {

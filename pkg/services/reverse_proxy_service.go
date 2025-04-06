@@ -7,6 +7,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
@@ -22,7 +23,7 @@ var (
 	logger              *zap.Logger = zap.L()
 )
 
-func StartLoadBalancers(handlers []*config.HandlerConfig) {
+func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 	for _, handler := range handlers {
 		serverPool, err := serverpool.NewServerPool(serverpool.GetLBStrategy(handler.ReverseProxy.LoadBalancing.Strategy))
 		if err != nil {
@@ -42,13 +43,15 @@ func StartLoadBalancers(handlers []*config.HandlerConfig) {
 
 			backendServer := backend.NewBackend(endpoint, rp)
 			rp.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, e error) {
+				logger = zap.L()
+
 				logger.Error("error handling the request",
 					zap.String("host", endpoint.Host),
 					zap.Error(e),
 				)
 				backendServer.SetAlive(false)
 	
-				if !loadbalancer.AllowRetry(request) {
+				if !loadbalancer.AllowRetry(request, handler.ReverseProxy.LoadBalancing.Retries) {
 					logger.Info(
 						"Max retry attempts reached, terminating",
 						zap.String("address", request.RemoteAddr),
@@ -57,23 +60,38 @@ func StartLoadBalancers(handlers []*config.HandlerConfig) {
 					http.Error(writer, "Service not available", http.StatusServiceUnavailable)
 					return
 				}
+
+				currentCount, ok := request.Context().Value(loadbalancer.RETRY_COUNT).(int)
+				if !ok {
+					currentCount = 0
+				}
 	
 				logger.Info(
 					"Attempting retry",
 					zap.String("address", request.RemoteAddr),
 					zap.String("URL", request.URL.Path),
 					zap.Bool("retry", true),
+					zap.Int("retry_count", currentCount+1),
 				)
+
+				sleepDuration := handler.ReverseProxy.LoadBalancing.TryInterval
+				if sleepDuration == 0 {
+					sleepDuration = 5
+				}
+				time.Sleep(time.Duration(handler.ReverseProxy.LoadBalancing.TryInterval) * time.Second)
+
 				loadBalancer.Serve(
 					writer,
 					request.WithContext(
-						context.WithValue(request.Context(), loadbalancer.RETRY_ATTEMPTED, true),
+						context.WithValue(request.Context(), loadbalancer.RETRY_COUNT, currentCount + 1),
 					),
 				)
 			}
 	
 			serverPool.AddBackend(backendServer)
 		}
+
+		go serverpool.LaunchHealthCheck(ctx, serverPool)
 
 		loadBalancers[handler] = loadBalancer
 	}
