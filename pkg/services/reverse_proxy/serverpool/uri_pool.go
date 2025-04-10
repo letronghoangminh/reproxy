@@ -21,7 +21,7 @@ func (s *uriServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
 		return nil
 	}
 
-	return s.backends[utils.Hash(r.URL.Path) % uint32(len(s.backends))]
+	return s.backends[utils.Hash(r.URL.Path)%uint32(len(s.backends))]
 }
 
 func (s *uriServerPool) AddBackend(b backend.Backend) {

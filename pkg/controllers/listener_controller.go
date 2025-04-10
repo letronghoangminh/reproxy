@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
-	"github.com/letronghoangminh/reproxy/pkg/services"
+	reverseproxy "github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
 	"go.uber.org/zap"
 )
@@ -52,14 +52,14 @@ func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 		handlerPointers := make([]*config.HandlerConfig, len(handlers))
 		for i := range handlers {
 			handlerPointers[i] = &handlers[i]
-			if handlers[i].ReverseProxy.Upstreams != nil {
+			if len(handlers[i].ReverseProxy.Upstreams.Dynamic) > 0 || len(handlers[i].ReverseProxy.Upstreams.Static) > 0 {
 				reverseProxyHandlers = append(reverseProxyHandlers, &handlers[i])
 			}
 		}
 		listenerControllers[port].TargetHandler[hostname] = handlerPointers
 	}
 
-	services.StartLoadBalancers(ctx, reverseProxyHandlers)
+	reverseproxy.StartLoadBalancers(ctx, reverseProxyHandlers)
 
 	for port, listenerController := range listenerControllers {
 		port := port
@@ -67,7 +67,7 @@ func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 			Addr:    fmt.Sprintf(":%d", port),
 			Handler: listenerController.Server,
 		}
-		
+
 		wg.Add(1)
 		go func() {
 			utils.Logger.Info("serving new controller", zap.Int("port", port))
@@ -75,7 +75,7 @@ func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 				utils.Logger.Error(fmt.Sprintf("error occurred while serving controller on port %d", port), zap.Error(err))
 			}
 		}()
-		
+
 		go func() {
 			<-ctx.Done()
 			utils.Logger.Info("shutting down controller", zap.Int("port", port))
@@ -111,7 +111,8 @@ func combineListener() map[string][]config.HandlerConfig {
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	utils.Logger.Info("requesting coming", zap.String("path", r.URL.Path), zap.String("host", r.Host))
 
-	var port int; var host string
+	var port int
+	var host string
 
 	if strings.Contains(r.Host, ":") {
 		port, _ = strconv.Atoi(strings.Split(r.Host, ":")[1])
@@ -146,9 +147,8 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 				utils.Logger.Debug("serving static file", zap.String("filePath", filePath))
 				http.ServeFile(w, r, filePath)
 				return
-			case handler.ReverseProxy.Upstreams != nil:
-				utils.Logger.Debug("serving reverse proxy", zap.Strings("upstream", handler.ReverseProxy.Upstreams))
-				services.HandleReverseProxyRequest(w, r, handler)
+			case len(handler.ReverseProxy.Upstreams.Dynamic) > 0 || len(handler.ReverseProxy.Upstreams.Static) > 0:
+				reverseproxy.HandleReverseProxyRequest(w, r, handler)
 				return
 			}
 		}

@@ -25,7 +25,7 @@ func (s *stickyServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
 	stickyCookie, err := r.Cookie("X-Sticky-Session-ID")
 	if err == nil {
 		stickySessionID, err := strconv.Atoi(stickyCookie.Value)
-	
+
 		if err == nil {
 			for idx, b := range s.backends {
 				if b.IsAlive() && stickySessionID == idx {
@@ -34,7 +34,6 @@ func (s *stickyServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
 			}
 		}
 	}
-
 
 	for i := 0; i < s.GetServerPoolSize(); i++ {
 		nextPeer := s.Rotate()

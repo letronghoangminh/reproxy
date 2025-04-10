@@ -21,7 +21,7 @@ func (s *ipServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
 		return nil
 	}
 
-	return s.backends[utils.Hash(r.RemoteAddr) % uint32(len(s.backends))]
+	return s.backends[utils.Hash(r.RemoteAddr)%uint32(len(s.backends))]
 }
 
 func (s *ipServerPool) AddBackend(b backend.Backend) {

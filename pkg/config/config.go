@@ -39,14 +39,24 @@ type StaticResponseConfig struct {
 
 type StaticFilesConfig struct {
 	Root       string   `mapstructure:"root" validate:"omitempty,dir"`
-	IndexFiles []string `mapstructure:"index_files" validate:"omitempty"`
 }
 
 type ReverseProxyConfig struct {
-	Upstreams     []string            `mapstructure:"upstreams" validate:"omitempty,dive,required,url"`
+	Rewrite       string            `mapstructure:"rewrite" validate:"omitempty"`
+	Upstreams     UpstreamConfig      `mapstructure:"upstreams" validate:"omitempty,required"`
 	LoadBalancing LoadBalancingConfig `mapstructure:"load_balancing" validate:"omitempty"`
-	AddHeaders    map[string]string   `mapstructure:"add_headers" validate:"omitempty,dive"`
-	RemoveHeaders []string            `mapstructure:"remove_headers" validate:"omitempty,dive"`
+	AddHeaders    map[string]string  `mapstructure:"add_headers" validate:"omitempty,dive"`
+	RemoveHeaders []string           `mapstructure:"remove_headers" validate:"omitempty,dive"`
+}
+
+type UpstreamConfig struct {
+	Static  []string               `mapstructure:"static" validate:"omitempty"`
+	Dynamic []DynamicUpstreamConfig `mapstructure:"dynamic" validate:"omitempty,dive"`
+}
+
+type DynamicUpstreamConfig struct {
+	Type  string `mapstructure:"type" validate:"required,oneof=A AAAA CNAME"`
+	Value string `mapstructure:"value" validate:"required"`
 }
 
 type LoadBalancingConfig struct {

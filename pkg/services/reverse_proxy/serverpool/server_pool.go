@@ -22,7 +22,7 @@ func HealthCheck(ctx context.Context, s ServerPool) {
 	aliveChannel := make(chan bool, 1)
 
 	for _, b := range s.GetBackends() {
-		requestCtx, stop := context.WithTimeout(ctx, 10 * time.Second)
+		requestCtx, stop := context.WithTimeout(ctx, 10*time.Second)
 		defer stop()
 		status := "up"
 		go backend.IsBackendAlive(requestCtx, aliveChannel, b.GetURL())

@@ -1,4 +1,4 @@
-package services
+package reverseproxy
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
+	"github.com/letronghoangminh/reproxy/pkg/services/dns"
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
 	loadbalancer "github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/load_balancer"
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/serverpool"
@@ -30,10 +31,13 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 			utils.Logger.Error("error occurred while creating server pool", zap.Error(err))
 			return
 		}
-	
+
 		loadBalancer := loadbalancer.NewLoadBalancer(serverPool)
 
-		for _, u := range handler.ReverseProxy.Upstreams {
+		staticUpstreams := handler.ReverseProxy.Upstreams.Static
+		dynamicUpstreams := dns.GetDynamicUpstreams(handler.ReverseProxy.Upstreams.Dynamic)
+
+		for _, u := range append(staticUpstreams, dynamicUpstreams...) {
 			endpoint, err := url.Parse(u)
 			if err != nil {
 				utils.Logger.Fatal(err.Error(), zap.String("URL", u))
@@ -48,7 +52,7 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 					zap.Error(e),
 				)
 				backendServer.SetAlive(false)
-	
+
 				if !loadbalancer.AllowRetry(request, handler.ReverseProxy.LoadBalancing.Retries) {
 					utils.Logger.Info(
 						"Max retry attempts reached, terminating",
@@ -63,7 +67,7 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 				if !ok {
 					currentCount = 0
 				}
-	
+
 				utils.Logger.Info(
 					"Attempting retry",
 					zap.String("address", request.RemoteAddr),
@@ -81,11 +85,11 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 				loadBalancer.Serve(
 					writer,
 					request.WithContext(
-						context.WithValue(request.Context(), loadbalancer.RETRY_COUNT, currentCount + 1),
+						context.WithValue(request.Context(), loadbalancer.RETRY_COUNT, currentCount+1),
 					),
 				)
 			}
-	
+
 			serverPool.AddBackend(backendServer)
 		}
 
@@ -96,11 +100,6 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 }
 
 func HandleReverseProxyRequest(w http.ResponseWriter, r *http.Request, handler *config.HandlerConfig) {
-	if handler.ReverseProxy.Upstreams == nil || len(handler.ReverseProxy.Upstreams) == 0 {
-		http.Error(w, "No upstreams configured", http.StatusInternalServerError)
-		return
-	}
-
 	loadBalancer := loadBalancers[handler]
 	if loadBalancer == nil {
 		http.Error(w, "Load balancer not found", http.StatusInternalServerError)
@@ -113,6 +112,8 @@ func HandleReverseProxyRequest(w http.ResponseWriter, r *http.Request, handler *
 	if handler.Path != "" {
 		r.URL.Path = strings.TrimPrefix(r.URL.Path, handler.Path)
 	}
+
+	rewritePath(r, handler.ReverseProxy.Rewrite)
 
 	loadBalancer.Serve(w, r)
 }
@@ -156,4 +157,16 @@ func replaceHeaderValue(r *http.Request, value string) string {
 	}
 
 	return result
+}
+
+func rewritePath(r *http.Request, rewrite string) {
+	if rewrite == "" {
+		return
+	}
+
+	rewrite = strings.TrimPrefix(rewrite, "/")
+	rewrite = strings.TrimSuffix(rewrite, "/")
+	newPath := strings.Replace(rewrite, "{path}", r.URL.Path, -1)
+
+	r.URL.Path = newPath
 }

@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	cfg    *config.Config
+	cfg *config.Config
 )
 
 func retrieveConfig(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,7 @@ func DefaultControllerServe(ctx context.Context, wg *sync.WaitGroup) {
 			utils.Logger.Error(fmt.Sprintf("error occurred while serving default controller on port %d", port), zap.Error(err))
 		}
 	}()
-	
+
 	go func() {
 		<-ctx.Done()
 		utils.Logger.Info("shutting down default controller", zap.Int("port", port))

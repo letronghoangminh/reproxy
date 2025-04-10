@@ -22,7 +22,7 @@ type backend struct {
 	mux          sync.RWMutex
 	connections  int
 	reverseProxy *httputil.ReverseProxy
-	cookies 	 []*http.Cookie
+	cookies      []*http.Cookie
 }
 
 func (b *backend) GetActiveConnections() int {

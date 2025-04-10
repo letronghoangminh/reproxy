@@ -28,6 +28,8 @@ A highly configurable reverse proxy server with support for static responses, fi
 - **Health Checking**: Automatic health monitoring of backend servers
 - **Header Manipulation**: Add or remove HTTP headers
 - **Path-based Routing**: Route requests based on URL paths
+- **URL Rewriting**: Modify request URLs before proxying
+- **Dynamic Upstreams**: Configure upstream servers dynamically
 
 ## Installation
 
@@ -54,7 +56,12 @@ listeners:
     handlers:
       - path: "/api"
         reverse_proxy:
-          upstreams: ["http://backend1:8080", "http://backend2:8080", "http://backend3:8080"]
+          rewrite: "/rewrite/{path}"
+          upstreams: 
+            static: ["http://localhost:8081", "http://localhost:8082", "http://localhost:8083"]
+            dynamic:
+              - type: A
+                value: "http://example.com:8080"
           load_balancing:
             strategy: round_robin
             retries: 3
@@ -132,7 +139,8 @@ reproxy --config /path/to/config.yaml
 
 | Field | Type | Description |
 |-------|------|-------------|
-| upstreams | []string | List of backend URLs |
+| upstreams | UpstreamConfig | Upstream configuration |
+| rewrite | map[string]string | Rules for URL rewriting before proxying |
 | load_balancing | LoadBalancingConfig | Load balancing configuration |
 | add_headers | map[string]string | Headers to add to the request |
 | remove_headers | []string | Headers to remove from the request |
@@ -144,6 +152,20 @@ reproxy --config /path/to/config.yaml
 | strategy | string | Load balancing strategy (round_robin, least_conn, random, ip_hash, uri_hash, sticky) |
 | retries | int | Maximum number of retries (default: 3) |
 | try_interval | int | Interval between retries in seconds (default: 5) |
+
+## Upstream Configuration
+
+| Field | Type | Description |
+|-------|------|-------------|
+| static | []string | List of static upstream server URLs |
+| dynamic | []DynamicUpstreamConfig | List of dynamic upstream configurations |
+
+### Dynamic Upstream Configuration
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | string | DNS record type (A, AAAA, CNAME) |
+| value | string | Domain/hostname to resolve |
 
 ## Header Variables
 
@@ -161,7 +183,6 @@ When adding headers, the following variables can be used:
 
 ## Upcoming Features
 
-- Dynamic upstreams for reverse proxy
 - More handler filters (method, header, query, etc.)
 - Automatic HTTPS via Let's Encrypt or local CA certificates
 - HTTP/1.1 and HTTP/2 support

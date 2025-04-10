@@ -9,13 +9,17 @@ listeners:
       - path: "/files"
         static_files:
           root: "/Users/hoangminh/Code/reproxy"
-          index_files: ["index.html"]
 
   - host: ["psycholog1st.local:2210"]
     handlers:
       - path: "/reverse"
         reverse_proxy:
-          upstreams: ["http://localhost:8081", "http://localhost:8082", "http://localhost:8083"]
+          rewrite: "/rewrite/{path}"
+          upstreams: 
+            static: ["http://localhost:8081", "http://localhost:8082", "http://localhost:8083"]
+            dynamic:
+              - type: A
+                value: "http://example.com:8080"
           load_balancing:
             strategy: sticky
             retries: 5
