@@ -59,9 +59,7 @@ func main() {
 	utils.Logger = appLogger
 
 	defer func() {
-		if err := appLogger.Sync(); err != nil {
-			fmt.Printf("Failed to flush logs: %v\n", err)
-		}
+		appLogger.Sync();
 	}()
 
 	appLogger.Info("Starting Reproxy",

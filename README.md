@@ -44,7 +44,7 @@ go install github.com/letronghoangminh/reproxy/cmd/reproxy@latest
 ### 🐳 Using Docker
 
 ```bash
-docker pull letronghoangminh/reproxy:latest
+docker pull psycholog1st/reproxy:latest
 docker run -p 2209:2209 -v /path/to/config.yaml:/app/config/config.yaml letronghoangminh/reproxy
 ```
 
