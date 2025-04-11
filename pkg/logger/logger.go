@@ -1,52 +1,44 @@
 package logger
 
 import (
-	"os"
+	"sync"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
-	"github.com/letronghoangminh/reproxy/pkg/utils"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"github.com/letronghoangminh/reproxy/pkg/interfaces"
 )
 
-func NewLogger(cfg config.Config) *zap.Logger {
-	logLevel := cfg.Global.LogLevel
+var (
+	defaultLogger interfaces.Logger
+	mu            sync.Mutex
+)
 
-	// debug => info => warn => error => dpanic => panic => fatal
-	var level zapcore.Level
-	switch logLevel {
-	case "debug":
-		level = zap.DebugLevel
-	case "info":
-		level = zap.InfoLevel
-	case "warn":
-		level = zap.WarnLevel
-	case "error":
-		level = zap.ErrorLevel
-	case "dpanic":
-		level = zap.DPanicLevel
-	case "panic":
-		level = zap.PanicLevel
-	case "fatal":
-		level = zap.FatalLevel
-	default:
-		level = zap.InfoLevel
-	}
+func NewLogger(cfg config.Config) interfaces.Logger {
+	logger := NewZapLogger(cfg)
 
-	encode := getEncoderLog()
+	mu.Lock()
+	defer mu.Unlock()
+	defaultLogger = logger
 
-	core := zapcore.NewCore(encode, zapcore.NewMultiWriteSyncer(zapcore.AddSync(os.Stdout)), level)
-
-	logger := zap.New(core, zap.AddCaller())
-	zap.ReplaceGlobals(logger)
-	utils.Logger = logger
 	return logger
 }
 
-func getEncoderLog() zapcore.Encoder {
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
-	return zapcore.NewJSONEncoder(encoderConfig)
+func GetLogger() interfaces.Logger {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if defaultLogger == nil {
+		return &noopLogger{}
+	}
+
+	return defaultLogger
 }
+
+type noopLogger struct{}
+
+func (l *noopLogger) Debug(msg string, fields ...interface{})      {}
+func (l *noopLogger) Info(msg string, fields ...interface{})       {}
+func (l *noopLogger) Warn(msg string, fields ...interface{})       {}
+func (l *noopLogger) Error(msg string, fields ...interface{})      {}
+func (l *noopLogger) Fatal(msg string, fields ...interface{})      {}
+func (l *noopLogger) With(fields ...interface{}) interfaces.Logger { return l }
+func (l *noopLogger) Sync() error                                  { return nil }

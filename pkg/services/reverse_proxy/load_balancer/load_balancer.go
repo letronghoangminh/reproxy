@@ -3,7 +3,7 @@ package loadbalancer
 import (
 	"net/http"
 
-	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/serverpool"
+	"github.com/letronghoangminh/reproxy/pkg/interfaces"
 )
 
 const (
@@ -19,12 +19,8 @@ func AllowRetry(r *http.Request, maxRetries int) bool {
 	return true
 }
 
-type LoadBalancer interface {
-	Serve(http.ResponseWriter, *http.Request)
-}
-
 type loadBalancer struct {
-	serverPool serverpool.ServerPool
+	serverPool interfaces.ServerPool
 }
 
 func (lb *loadBalancer) Serve(w http.ResponseWriter, r *http.Request) {
@@ -36,7 +32,7 @@ func (lb *loadBalancer) Serve(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "Service not available", http.StatusServiceUnavailable)
 }
 
-func NewLoadBalancer(serverPool serverpool.ServerPool) LoadBalancer {
+func NewLoadBalancer(serverPool interfaces.ServerPool) interfaces.LoadBalancer {
 	return &loadBalancer{
 		serverPool: serverPool,
 	}

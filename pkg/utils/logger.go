@@ -1,7 +1,15 @@
 package utils
 
-import "go.uber.org/zap"
-
-var (
-	Logger *zap.Logger
+import (
+	"github.com/letronghoangminh/reproxy/pkg/interfaces"
+	"github.com/letronghoangminh/reproxy/pkg/logger"
 )
+
+var Logger interfaces.Logger
+
+func GetLogger() interfaces.Logger {
+	if Logger == nil {
+		Logger = logger.GetLogger()
+	}
+	return Logger
+}

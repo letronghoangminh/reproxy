@@ -3,8 +3,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
-	"path"
 	"strconv"
 	"strings"
 	"sync"
@@ -12,6 +12,7 @@ import (
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"github.com/letronghoangminh/reproxy/pkg/services/matcher"
 	reverseproxy "github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy"
+	"github.com/letronghoangminh/reproxy/pkg/services/static"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
 	"go.uber.org/zap"
 )
@@ -110,24 +111,55 @@ func combineListener() map[string][]config.HandlerConfig {
 }
 
 func defaultHandler(w http.ResponseWriter, r *http.Request) {
-	utils.Logger.Info("requesting coming", zap.String("path", r.URL.Path), zap.String("host", r.Host))
+	logger := utils.GetLogger()
+	logger.Info("Request received",
+		"path", r.URL.Path,
+		"host", r.Host,
+		"method", r.Method,
+		"remote_addr", r.RemoteAddr)
+
+	// Add request ID for tracing
+	requestID := r.Header.Get("X-Request-ID")
+	if requestID == "" {
+		requestID = utils.GenerateRequestID()
+		r.Header.Set("X-Request-ID", requestID)
+	}
+	logger = logger.With("request_id", requestID)
 
 	var port int
 	var host string
 
 	if strings.Contains(r.Host, ":") {
-		port, _ = strconv.Atoi(strings.Split(r.Host, ":")[1])
-		host = strings.Split(r.Host, ":")[0]
+		var err error
+		var portStr string
+		host, portStr, err = net.SplitHostPort(r.Host)
+		if err != nil {
+			logger.Error("Failed to parse host and port", "host", r.Host, "error", err)
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		port, err = strconv.Atoi(portStr)
+		if err != nil {
+			logger.Error("Invalid port number", "port", portStr, "error", err)
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
 	} else {
 		host = r.Host
+		port = cfg.Global.Port
 	}
 
-	listenerController := listenerControllers[port]
-	handlers, ok := listenerController.TargetHandler[host]
-
+	listenerController, ok := listenerControllers[port]
 	if !ok {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("404 page not found"))
+		logger.Warn("No listener controller for port", "port", port)
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	handlers, ok := listenerController.TargetHandler[host]
+	if !ok {
+		logger.Warn("No handlers for host", "host", host)
+		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
 
@@ -135,29 +167,43 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 	if handler != nil {
 		handleRequest(w, r, handler)
 	} else {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("404 page not found"))
+		logger.Debug("No matching handler found")
+		http.Error(w, "Not Found", http.StatusNotFound)
 	}
 }
 
 func handleRequest(w http.ResponseWriter, r *http.Request, handler *config.HandlerConfig) {
+	logger := utils.GetLogger()
+
+	requestID := r.Header.Get("X-Request-ID")
+	if requestID == "" {
+		requestID = utils.GenerateRequestID()
+		r.Header.Set("X-Request-ID", requestID)
+	}
+	logger = logger.With("request_id", requestID)
+
 	switch {
 	case handler.StaticResponse.Body != "":
-		w.WriteHeader(handler.StaticResponse.StatusCode)
-		w.Write([]byte(handler.StaticResponse.Body))
-		return
-	case handler.StaticFiles.Root != "":
-		cleanPath := path.Clean(strings.TrimPrefix(r.URL.Path, handler.Matchers.Path))
-		for strings.HasPrefix(cleanPath, "..") || strings.HasPrefix(cleanPath, "/") {
-			cleanPath = strings.TrimPrefix(cleanPath, "..")
-			cleanPath = strings.TrimPrefix(cleanPath, "/")
+		logger.Debug("Handling static response")
+		err := static.ServeStaticResponse(w, r, handler)
+		if err != nil {
+			logger.Error("Failed to serve static response", "error", err)
 		}
-		filePath := path.Join(handler.StaticFiles.Root, cleanPath)
-		utils.Logger.Debug("serving static file", zap.String("filePath", filePath))
-		http.ServeFile(w, r, filePath)
-		return
+
+	case handler.StaticFiles.Root != "":
+		logger.Debug("Handling static file")
+		err := static.ServeFile(w, r, handler)
+		if err != nil {
+			logger.Error("Failed to serve static file", "error", err)
+		}
+
 	case len(handler.ReverseProxy.Upstreams.Dynamic) > 0 || len(handler.ReverseProxy.Upstreams.Static) > 0:
+		logger.Debug("Handling reverse proxy")
 		reverseproxy.HandleReverseProxyRequest(w, r, handler)
-		return
+
+	default:
+		logger.Warn("Handler matched but no implementation found",
+			"matcher_path", handler.Matchers.Path)
+		http.Error(w, "Not Implemented", http.StatusNotImplemented)
 	}
 }

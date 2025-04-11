@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
+	"github.com/letronghoangminh/reproxy/pkg/interfaces"
 	"github.com/letronghoangminh/reproxy/pkg/services/dns"
 	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
 	loadbalancer "github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/load_balancer"
@@ -21,7 +22,7 @@ import (
 // Reverse proxy implementation credits to https://github.com/leonardo5621/golang-load-balancer
 
 var (
-	loadBalancers = map[*config.HandlerConfig]loadbalancer.LoadBalancer{}
+	loadBalancers = map[*config.HandlerConfig]interfaces.LoadBalancer{}
 )
 
 func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
@@ -35,7 +36,11 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 		loadBalancer := loadbalancer.NewLoadBalancer(serverPool)
 
 		staticUpstreams := handler.ReverseProxy.Upstreams.Static
-		dynamicUpstreams := dns.GetDynamicUpstreams(handler.ReverseProxy.Upstreams.Dynamic)
+		dynamicUpstreams, dnsErr := dns.GetDynamicUpstreams(handler.ReverseProxy.Upstreams.Dynamic)
+		if dnsErr != nil {
+			utils.Logger.Error("error resolving dynamic upstreams", zap.Error(dnsErr))
+			dynamicUpstreams = []string{}
+		}
 
 		for _, u := range append(staticUpstreams, dynamicUpstreams...) {
 			endpoint, err := url.Parse(u)

@@ -5,23 +5,23 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
+	"github.com/letronghoangminh/reproxy/pkg/interfaces"
 )
 
 type stickyServerPool struct {
-	backends []backend.Backend
+	backends []interfaces.Backend
 	mux      sync.RWMutex
 	current  int
 }
 
-func (s *stickyServerPool) Rotate() backend.Backend {
+func (s *stickyServerPool) Rotate() interfaces.Backend {
 	s.mux.Lock()
 	s.current = (s.current + 1) % s.GetServerPoolSize()
 	s.mux.Unlock()
 	return s.backends[s.current]
 }
 
-func (s *stickyServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
+func (s *stickyServerPool) GetNextValidPeer(r *http.Request) interfaces.Backend {
 	stickyCookie, err := r.Cookie("X-Sticky-Session-ID")
 	if err == nil {
 		stickySessionID, err := strconv.Atoi(stickyCookie.Value)
@@ -50,11 +50,11 @@ func (s *stickyServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
 	return nil
 }
 
-func (s *stickyServerPool) GetBackends() []backend.Backend {
+func (s *stickyServerPool) GetBackends() []interfaces.Backend {
 	return s.backends
 }
 
-func (s *stickyServerPool) AddBackend(b backend.Backend) {
+func (s *stickyServerPool) AddBackend(b interfaces.Backend) {
 	s.backends = append(s.backends, b)
 }
 

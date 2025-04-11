@@ -4,16 +4,16 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
+	"github.com/letronghoangminh/reproxy/pkg/interfaces"
 )
 
 type lcServerPool struct {
-	backends []backend.Backend
+	backends []interfaces.Backend
 	mux      sync.RWMutex
 }
 
-func (s *lcServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
-	var leastConnectedPeer backend.Backend
+func (s *lcServerPool) GetNextValidPeer(r *http.Request) interfaces.Backend {
+	var leastConnectedPeer interfaces.Backend
 	for _, b := range s.backends {
 		if b.IsAlive() {
 			leastConnectedPeer = b
@@ -32,7 +32,7 @@ func (s *lcServerPool) GetNextValidPeer(r *http.Request) backend.Backend {
 	return leastConnectedPeer
 }
 
-func (s *lcServerPool) AddBackend(b backend.Backend) {
+func (s *lcServerPool) AddBackend(b interfaces.Backend) {
 	s.backends = append(s.backends, b)
 }
 
@@ -40,6 +40,6 @@ func (s *lcServerPool) GetServerPoolSize() int {
 	return len(s.backends)
 }
 
-func (s *lcServerPool) GetBackends() []backend.Backend {
+func (s *lcServerPool) GetBackends() []interfaces.Backend {
 	return s.backends
 }

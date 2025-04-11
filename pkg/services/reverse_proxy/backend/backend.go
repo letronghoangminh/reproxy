@@ -5,16 +5,9 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"sync"
-)
 
-type Backend interface {
-	SetAlive(bool)
-	IsAlive() bool
-	GetURL() *url.URL
-	GetActiveConnections() int
-	Serve(http.ResponseWriter, *http.Request)
-	AddCookie(*http.Cookie)
-}
+	"github.com/letronghoangminh/reproxy/pkg/interfaces"
+)
 
 type backend struct {
 	url          *url.URL
@@ -73,7 +66,7 @@ func (b *backend) AddCookie(cookie *http.Cookie) {
 	b.mux.Unlock()
 }
 
-func NewBackend(u *url.URL, rp *httputil.ReverseProxy) Backend {
+func NewBackend(u *url.URL, rp *httputil.ReverseProxy) interfaces.Backend {
 	return &backend{
 		url:          u,
 		alive:        true,

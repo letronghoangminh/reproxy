@@ -4,10 +4,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/letronghoangminh/reproxy/pkg/interfaces"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
 )
 
-func LaunchHealthCheck(ctx context.Context, sp ServerPool) {
+func LaunchHealthCheck(ctx context.Context, sp interfaces.ServerPool) {
 	t := time.NewTicker(time.Second * 20)
 	utils.Logger.Info("Starting health check...")
 	for {

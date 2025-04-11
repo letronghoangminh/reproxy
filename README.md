@@ -202,7 +202,6 @@ When adding headers, the following variables can be used:
 - 🔒 Automatic HTTPS via Let's Encrypt or local CA certificates
 - 🚀 HTTP/1.1 and HTTP/2 support
 - 📦 Response compression and OLTP
-- 🔌 WebSocket proxying
 
 ## 📜 License
 
