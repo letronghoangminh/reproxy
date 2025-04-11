@@ -2,15 +2,6 @@
 
 <div align="center">
 
-```
-  _____  ______ _____  _____   ______   ____     __
- |  __ \|  ____|  __ \|  __ \ / __ \ \ / /\ \   / /
- | |__) | |__  | |__) | |__) | |  | \ V /  \ \_/ / 
- |  _  /|  __| |  ___/|  _  /| |  | |> <    \   /  
- | | \ \| |____| |    | | \ \| |__| / . \    | |   
- |_|  \_\______|_|    |_|  \_\\____/_/ \_\   |_|
-```
-
 ### ⚡ A highly configurable reverse proxy server with support for static responses, file serving, and load balancing ⚡
 
 ![Go Version](https://img.shields.io/badge/Go-1.24+-00ADD8?style=for-the-badge&logo=go&logoColor=white)
