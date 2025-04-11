@@ -15,7 +15,7 @@
 - 📝 **Declarative YAML Configuration**: Easy to set up with a single YAML file
 - 🌐 **Multiple Host/Port Binding**: Route traffic based on different hosts and ports
 - 📋 **Static Response Handlers**: Return fixed responses for specific paths
-- 📂 **Static File Serving**: Serve files from local filesystem
+- 📂 **Static File Serving**: Serve files from local filesystem with security protections
 - 🔄 **Reverse Proxy with Load Balancing**: Distribute traffic across multiple backends
 - ⚖️ **Load Balancing Strategies**:
   - 🔄 Round Robin (default)
@@ -30,6 +30,8 @@
 - ✏️ **URL Rewriting**: Modify request URLs before proxying
 - 🔄 **Dynamic Upstreams**: Configure upstream servers dynamically via DNS
 - 🎯 **Advanced Request Matching**: Match requests based on path, method, headers, query parameters, and client IP
+- 🔒 **Security Headers**: Automatically adds security headers to responses
+- 🔍 **Request Tracing**: Adds request IDs for better debugging and monitoring
 
 ## 🔧 Installation
 
@@ -103,6 +105,8 @@ reproxy --config /path/to/config.yaml
 ### 🔣 Command-line Options
 
 - `--config`: Path to the configuration file (default: `config/config.yaml`)
+- `--log-format`: Log format, either json or console (default: `json`)
+- `--version`: Print version information and exit
 
 ## 📑 Configuration Reference
 
