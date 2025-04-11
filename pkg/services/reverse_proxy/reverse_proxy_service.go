@@ -109,8 +109,8 @@ func HandleReverseProxyRequest(w http.ResponseWriter, r *http.Request, handler *
 	addHeaders(r, handler.ReverseProxy.AddHeaders)
 	removeHeaders(r, handler.ReverseProxy.RemoveHeaders)
 
-	if handler.Path != "" {
-		r.URL.Path = strings.TrimPrefix(r.URL.Path, handler.Path)
+	if handler.Matchers.Path != "" {
+		r.URL.Path = strings.TrimPrefix(r.URL.Path, handler.Matchers.Path)
 	}
 
 	rewritePath(r, handler.ReverseProxy.Rewrite)

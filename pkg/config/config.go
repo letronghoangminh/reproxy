@@ -26,10 +26,18 @@ type ListenerConfig struct {
 }
 
 type HandlerConfig struct {
-	Path           string               `mapstructure:"path" validate:"required"`
+	Matchers       MatchersConfig 	`mapstructure:"matchers" validate:"omitempty"`
 	StaticResponse StaticResponseConfig `mapstructure:"static_response"`
 	StaticFiles    StaticFilesConfig    `mapstructure:"static_files"`
 	ReverseProxy   ReverseProxyConfig   `mapstructure:"reverse_proxy"`
+}
+
+type MatchersConfig struct {
+	Headers map[string]string `mapstructure:"headers" validate:"omitempty,dive"`
+	Query   map[string]string `mapstructure:"query" validate:"omitempty,dive"`
+	Path    string            `mapstructure:"path" validate:"omitempty"`
+	Method []string		  `mapstructure:"method" validate:"omitempty,dive,oneof=GET POST PUT DELETE PATCH OPTIONS HEAD *"` 
+	ClientCIDRs []string 	`mapstructure:"client_cidrs" validate:"omitempty,dive,cidr"`
 }
 
 type StaticResponseConfig struct {

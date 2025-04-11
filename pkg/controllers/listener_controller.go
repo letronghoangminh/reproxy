@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
+	"github.com/letronghoangminh/reproxy/pkg/services/matcher"
 	reverseproxy "github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
 	"go.uber.org/zap"
@@ -130,27 +131,26 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, handler := range handlers {
-		if strings.HasPrefix(r.URL.Path, handler.Path) {
-			switch {
-			case handler.StaticResponse.Body != "":
-				w.WriteHeader(handler.StaticResponse.StatusCode)
-				w.Write([]byte(handler.StaticResponse.Body))
-				return
-			case handler.StaticFiles.Root != "":
-				cleanPath := path.Clean(strings.TrimPrefix(r.URL.Path, handler.Path))
-				for strings.HasPrefix(cleanPath, "..") || strings.HasPrefix(cleanPath, "/") {
-					cleanPath = strings.TrimPrefix(cleanPath, "..")
-					cleanPath = strings.TrimPrefix(cleanPath, "/")
-				}
-				filePath := path.Join(handler.StaticFiles.Root, cleanPath)
-				utils.Logger.Debug("serving static file", zap.String("filePath", filePath))
-				http.ServeFile(w, r, filePath)
-				return
-			case len(handler.ReverseProxy.Upstreams.Dynamic) > 0 || len(handler.ReverseProxy.Upstreams.Static) > 0:
-				reverseproxy.HandleReverseProxyRequest(w, r, handler)
-				return
+	handler := matcher.MatchHandler(r, handlers)
+	if handler != nil {
+		switch {
+		case handler.StaticResponse.Body != "":
+			w.WriteHeader(handler.StaticResponse.StatusCode)
+			w.Write([]byte(handler.StaticResponse.Body))
+			return
+		case handler.StaticFiles.Root != "":
+			cleanPath := path.Clean(strings.TrimPrefix(r.URL.Path, handler.Matchers.Path))
+			for strings.HasPrefix(cleanPath, "..") || strings.HasPrefix(cleanPath, "/") {
+				cleanPath = strings.TrimPrefix(cleanPath, "..")
+				cleanPath = strings.TrimPrefix(cleanPath, "/")
 			}
+			filePath := path.Join(handler.StaticFiles.Root, cleanPath)
+			utils.Logger.Debug("serving static file", zap.String("filePath", filePath))
+			http.ServeFile(w, r, filePath)
+			return
+		case len(handler.ReverseProxy.Upstreams.Dynamic) > 0 || len(handler.ReverseProxy.Upstreams.Static) > 0:
+			reverseproxy.HandleReverseProxyRequest(w, r, handler)
+			return
 		}
 	}
 

@@ -133,14 +133,13 @@ reproxy --config /path/to/config.yaml
 | Field | Type | Description |
 |-------|------|-------------|
 | root | string | Root directory for file serving |
-| index_files | []string | List of index files to try |
 
 ### Reverse Proxy Configuration
 
 | Field | Type | Description |
 |-------|------|-------------|
 | upstreams | UpstreamConfig | Upstream configuration |
-| rewrite | map[string]string | Rules for URL rewriting before proxying |
+| rewrite | string | URL rewriting pattern (e.g., "/rewrite/{path}") |
 | load_balancing | LoadBalancingConfig | Load balancing configuration |
 | add_headers | map[string]string | Headers to add to the request |
 | remove_headers | []string | Headers to remove from the request |
@@ -187,6 +186,7 @@ When adding headers, the following variables can be used:
 - Automatic HTTPS via Let's Encrypt or local CA certificates
 - HTTP/1.1 and HTTP/2 support
 - Response compression and OLTP
+- WebSocket proxying
 
 ## License
 

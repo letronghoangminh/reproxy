@@ -1,18 +1,27 @@
 listeners:
   - host: ["localhost:2211"]
     handlers:
-      - path: "/static"
+      - matchers:
+          path: "/static"
         static_response:
           status: 200
           body: "Hello, World!"
 
-      - path: "/files"
+      - matchers:
+          path: "/files"
         static_files:
           root: "/Users/hoangminh/Code/reproxy"
 
   - host: ["psycholog1st.local:2210"]
     handlers:
-      - path: "/reverse"
+      - matchers:
+          path: "/reverse"
+          method: ["GET", "POST", "*"]
+          headers:
+            X-Test-Header1: test
+          client_cidrs: ["1.2.3.4/32", "0.0.0.0/0", "::/0"]
+          query:
+            test: "test"
         reverse_proxy:
           rewrite: "/rewrite/{path}"
           upstreams: 
