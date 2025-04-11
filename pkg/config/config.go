@@ -26,18 +26,18 @@ type ListenerConfig struct {
 }
 
 type HandlerConfig struct {
-	Matchers       MatchersConfig 	`mapstructure:"matchers" validate:"omitempty"`
+	Matchers       MatchersConfig       `mapstructure:"matchers" validate:"omitempty"`
 	StaticResponse StaticResponseConfig `mapstructure:"static_response"`
 	StaticFiles    StaticFilesConfig    `mapstructure:"static_files"`
 	ReverseProxy   ReverseProxyConfig   `mapstructure:"reverse_proxy"`
 }
 
 type MatchersConfig struct {
-	Headers map[string]string `mapstructure:"headers" validate:"omitempty,dive"`
-	Query   map[string]string `mapstructure:"query" validate:"omitempty,dive"`
-	Path    string            `mapstructure:"path" validate:"omitempty"`
-	Method []string		  `mapstructure:"method" validate:"omitempty,dive,oneof=GET POST PUT DELETE PATCH OPTIONS HEAD *"` 
-	ClientCIDRs []string 	`mapstructure:"client_cidrs" validate:"omitempty,dive,cidr"`
+	Headers     map[string]string `mapstructure:"headers" validate:"omitempty,dive"`
+	Query       map[string]string `mapstructure:"query" validate:"omitempty,dive"`
+	Path        string            `mapstructure:"path" validate:"omitempty"`
+	Method      []string          `mapstructure:"method" validate:"omitempty,dive,oneof=GET POST PUT DELETE PATCH OPTIONS HEAD *"`
+	ClientCIDRs []string          `mapstructure:"client_cidrs" validate:"omitempty,dive,cidr"`
 }
 
 type StaticResponseConfig struct {
@@ -46,19 +46,19 @@ type StaticResponseConfig struct {
 }
 
 type StaticFilesConfig struct {
-	Root       string   `mapstructure:"root" validate:"omitempty,dir"`
+	Root string `mapstructure:"root" validate:"omitempty,dir"`
 }
 
 type ReverseProxyConfig struct {
-	Rewrite       string            `mapstructure:"rewrite" validate:"omitempty"`
+	Rewrite       string              `mapstructure:"rewrite" validate:"omitempty"`
 	Upstreams     UpstreamConfig      `mapstructure:"upstreams" validate:"omitempty,required"`
 	LoadBalancing LoadBalancingConfig `mapstructure:"load_balancing" validate:"omitempty"`
-	AddHeaders    map[string]string  `mapstructure:"add_headers" validate:"omitempty,dive"`
-	RemoveHeaders []string           `mapstructure:"remove_headers" validate:"omitempty,dive"`
+	AddHeaders    map[string]string   `mapstructure:"add_headers" validate:"omitempty,dive"`
+	RemoveHeaders []string            `mapstructure:"remove_headers" validate:"omitempty,dive"`
 }
 
 type UpstreamConfig struct {
-	Static  []string               `mapstructure:"static" validate:"omitempty"`
+	Static  []string                `mapstructure:"static" validate:"omitempty"`
 	Dynamic []DynamicUpstreamConfig `mapstructure:"dynamic" validate:"omitempty,dive"`
 }
 

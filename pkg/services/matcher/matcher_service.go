@@ -11,8 +11,7 @@ import (
 
 func MatchHandler(r *http.Request, handlers []*config.HandlerConfig) *config.HandlerConfig {
 	for _, handler := range handlers {
-		if len(handler.Matchers.Method) > 0 && !(
-			slices.Contains(handler.Matchers.Method, r.Method) ||
+		if len(handler.Matchers.Method) > 0 && !(slices.Contains(handler.Matchers.Method, r.Method) ||
 			slices.Contains(handler.Matchers.Method, "*")) {
 			continue
 		}
