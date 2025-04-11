@@ -8,7 +8,7 @@
  | |__) | |__  | |__) | |__) | |  | \ V /  \ \_/ / 
  |  _  /|  __| |  ___/|  _  /| |  | |> <    \   /  
  | | \ \| |____| |    | | \ \| |__| / . \    | |   
- |_|  \_\______|_|    |_|  \_\\____/_/ \_\   |_|
+|_|  \_\______|_|    |_|  \_\\____/_/ \_\   |_|
 ```
 
 ### ⚡ A highly configurable reverse proxy server with support for static responses, file serving, and load balancing ⚡
