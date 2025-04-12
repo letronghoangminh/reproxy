@@ -40,6 +40,8 @@ func printLogo() {
 }
 
 func main() {
+	buildDate = time.Now().Format(time.RFC850)
+
 	printLogo()
 	flag.Parse()
 

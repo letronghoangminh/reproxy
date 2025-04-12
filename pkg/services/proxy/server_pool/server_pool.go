@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/letronghoangminh/reproxy/pkg/interfaces"
-	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
+	"github.com/letronghoangminh/reproxy/pkg/services/proxy/backend"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
 	"go.uber.org/zap"
 )

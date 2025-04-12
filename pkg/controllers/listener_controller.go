@@ -11,7 +11,7 @@ import (
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"github.com/letronghoangminh/reproxy/pkg/services/matcher"
-	reverseproxy "github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy"
+	proxy "github.com/letronghoangminh/reproxy/pkg/services/proxy"
 	"github.com/letronghoangminh/reproxy/pkg/services/static"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
 	"go.uber.org/zap"
@@ -61,7 +61,7 @@ func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 		listenerControllers[port].TargetHandler[hostname] = handlerPointers
 	}
 
-	reverseproxy.StartLoadBalancers(ctx, reverseProxyHandlers)
+	proxy.StartLoadBalancers(ctx, reverseProxyHandlers)
 
 	for port, listenerController := range listenerControllers {
 		port := port
@@ -199,7 +199,7 @@ func handleRequest(w http.ResponseWriter, r *http.Request, handler *config.Handl
 
 	case len(handler.ReverseProxy.Upstreams.Dynamic) > 0 || len(handler.ReverseProxy.Upstreams.Static) > 0:
 		logger.Debug("Handling reverse proxy")
-		reverseproxy.HandleReverseProxyRequest(w, r, handler)
+		proxy.HandleReverseProxyRequest(w, r, handler)
 
 	default:
 		logger.Warn("Handler matched but no implementation found",

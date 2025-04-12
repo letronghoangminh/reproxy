@@ -12,9 +12,9 @@ import (
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"github.com/letronghoangminh/reproxy/pkg/interfaces"
 	"github.com/letronghoangminh/reproxy/pkg/services/dns"
-	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/backend"
-	loadbalancer "github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/load_balancer"
-	"github.com/letronghoangminh/reproxy/pkg/services/reverse_proxy/serverpool"
+	"github.com/letronghoangminh/reproxy/pkg/services/proxy/backend"
+	loadbalancer "github.com/letronghoangminh/reproxy/pkg/services/proxy/load_balancer"
+	"github.com/letronghoangminh/reproxy/pkg/services/proxy/server_pool"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
 	"go.uber.org/zap"
 )
