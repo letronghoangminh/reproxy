@@ -1,0 +1,212 @@
+# .golangci.yaml - Configuration for golangci-lint
+
+# Options for analysis running
+run:
+  # Timeout for analysis, e.g. 30s, 5m, default is 1m
+  timeout: 5m
+  
+  # Include test files or not, default is true
+  tests: true
+  
+  # Default concurrency is a available CPU number
+  concurrency: 4
+  
+  # Which dirs to skip: issues from them won't be reported
+  skip-dirs:
+    - vendor
+    - tmp
+  
+  # Allow multiple parallel golangci-lint instances
+  allow-parallel-runners: false
+  
+  # Maximum issues count per one linter
+  max-issues-per-linter: 50
+  
+  # Maximum count of issues with the same text
+  max-same-issues: 10
+
+# Output configuration options
+output:
+  # Format for the output: colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
+  format: colored-line-number
+  
+  # Print lines of code with issue
+  print-issued-lines: true
+  
+  # Print linter name in the end of issue text
+  print-linter-name: true
+
+# All available settings of specific linters
+linters-settings:
+  dupl:
+    # Tokens count to trigger issue, default is 150
+    threshold: 100
+  errcheck:
+    # Report about not checking errors in type assertions and type switches (default: false)
+    check-type-assertions: true
+    # Report error handling issues marked with "// nolint:errcheck"
+    check-type-switches: true
+  gocyclo:
+    # Minimal code complexity to report
+    min-complexity: 15
+  goimports:
+    # Put imports beginning with prefix after 3rd-party packages
+    local-prefixes: github.com/letronghoangminh/reproxy
+  govet:
+    # Report about shadowed variables
+    check-shadowing: true
+    # Enable all analyzers
+    enable-all: true
+    # Disable analyzers by name
+    disable:
+      - fieldalignment
+  lll:
+    # Max line length, lines longer will be reported
+    line-length: 120
+    # Tab width in spaces
+    tab-width: 4
+  misspell:
+    # Correct spellings using locale preferences for US or UK
+    locale: US
+  nakedret:
+    # Make an issue if func has more than this number of lines, 0 means no limit
+    max-func-lines: 30
+  unused:
+    # Treat code as a program (not a library)
+    check-exported: false
+
+# Enable specific linters - all linters are enabled by default
+linters:
+  enable:
+    - asciicheck # Checks that all code points are ASCII
+    - bidichk # Checks for dangerous unicode character sequences
+    - bodyclose # Checks whether HTTP response body is properly closed
+    - dupl # Tool for code clone detection
+    - durationcheck # Check for two durations multiplied together
+    - errcheck # Checks for unchecked errors
+    - errorlint # Finds code that will cause problems with the error wrapping scheme
+    - exportloopref # Checks for pointers to enclosing loop variables
+    - gochecknoinits # Check that no init functions are present
+    - goconst # Finds repeated strings that could be constants
+    - gocritic # Provides diagnostics that check for bugs, performance and style issues
+    - gocyclo # Computes and checks the cyclomatic complexity of functions
+    - godot # Check if comments end in a period
+    - gofmt # Checks that code is gofmt-ed
+    - goimports # Check imports are formatted according to goimport
+    - gomodguard # Allow and block list linter for direct Go module dependencies
+    - goprintffuncname # Checks that printf-like functions are named with `f` at the end
+    - gosec # Inspects source code for security problems
+    - gosimple # Linter for Go source code that specializes in simplifying
+    - govet # Reports suspicious constructs
+    - ineffassign # Detects when assignments to existing variables are not used
+    - misspell # Finds commonly misspelled English words in comments
+    - nakedret # Finds naked returns in functions
+    - noctx # Finds sending HTTP request without context.Context
+    - nolintlint # Reports ill-formed or insufficient nolint directives
+    - prealloc # Finds slice declarations that could potentially be pre-allocated
+    - predeclared # Finds code that shadows predeclared identifiers
+    - revive # Fast, configurable, extensible, flexible, and beautiful linter for Go
+    - staticcheck # Go static analysis
+    - thelper # Detects golang test helpers without t.Helper() call
+    - typecheck # Like the front-end of a Go compiler
+    - unconvert # Remove unnecessary type conversions
+    - unparam # Reports unused function parameters
+    - unused # Checks for unused constants, variables, functions and types
+    - whitespace # Tool for detection of leading and trailing whitespace
+
+  disable:
+    - cyclop # similar to gocyclo but we're already using that
+    - depguard # we manage imports ourselves
+    - dogsled # checks assignments with too many blank identifiers, not a concern for us
+    - exhaustive # Checks exhaustiveness of enum switch statements, too strict for our needs
+    - exhaustruct # Checks if all struct fields are initialized, too noisy
+    - forbidigo # Forbids identifiers, too restrictive
+    - funlen # We have gocyclo to handle complexity
+    - gci # Deprecated, we use goimports
+    - gochecknoglobals # Checks that no globals are present, too restrictive
+    - gocognit # We already have gocyclo
+    - godox # Detects FIXME, TODO and other comment keywords, too noisy during development
+    - goerr113 # Checks the errors handling expressions, too restrictive
+    - gomnd # An analyzer to detect magic numbers, too noisy
+    - interfacebloat # Checks that interfaces don't contain too many methods, too restrictive
+    - lll # Line length linter, already covered by other means
+    - maintidx # Measures the maintainability index of each function, too experimental
+    - nestif # Reports deep nesting of if statements, covered by other linters
+    - nilnil # Checks that there is no simultaneous return of nil error and an invalid value
+    - stylecheck # Stylecheck is a replacement for golint, covered by revive
+    - testpackage # Makes you use a separate _test package, too restrictive
+    - tparallel # Detects inappropriate usage of t.Parallel(), we handle this ourselves
+    - wrapcheck # Checks that errors returned from external packages are wrapped, too strict
+    - wsl # Whitespace Linter, too opinionated
+
+# Don't output issues on excluded files even if they are found
+issues:
+  # Maximum count of issues with the same text
+  max-same-issues: 10
+  
+  # Maximum issues count per one linter. If set to 0, no limit.
+  max-issues-per-linter: 30
+  
+  # List of regexps of issue texts to exclude
+  exclude:
+    - "should have a package comment"
+    - "should have comment"
+    - "comment on exported"
+    - "var-naming: don't use an underscore in package name"
+
+  # Excluding configuration per-path, per-linter, per-text and per-source
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - unparam
+
+    # Exclude known linters from partially hard-vendored code
+    - path: vendor/
+      text: "Use of weak random number generator"
+      linters:
+        - gosec
+
+  # Exclude some directories from being analyzed
+  exclude-dirs:
+    - vendor
+
+  # Enable issues deemed experimental
+  include:
+    - EXC0002 # Linter include-note, disabled by default
+
+# Severity configuration
+severity:
+  # Default value is empty string.
+  # Set the default severity for issues. If severity rules are defined and the issues
+  # do not match or no severity is provided to the rule this will be the default
+  # severity applied. Severities should match the supported severity names of the
+  # selected out format.
+  # - Code climate: https://docs.codeclimate.com/docs/issues#issue-severity
+  # - Checkstyle: https://checkstyle.sourceforge.io/property_types.html#severity
+  default-severity: error
+
+  # The default value is false.
+  # If set to true severity-rules regular expressions become case sensitive.
+  case-sensitive: false
+
+  # Severity rules is a list of severity levels to be applied by severity name to
+  # rule selectors and overrides the default severity.
+  # Severity rule has the following properties:
+  # - linters: list of linter names the rule applies to.
+  # - text: a regular expression matching the text linter output to apply the
+  #   severity to. If empty the rule will apply to all linter output matched by
+  #   the linters list.
+  # - severity: the value to set the severity to.
+  #   - error
+  #   - warning
+  #   - info
+  rules:
+    - linters:
+        - gosec
+      text: "weak cryptographic"
+      severity: warning
