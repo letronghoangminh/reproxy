@@ -8,7 +8,6 @@ import (
 	"github.com/letronghoangminh/reproxy/pkg/interfaces"
 	"github.com/letronghoangminh/reproxy/pkg/services/proxy/backend"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
-	"go.uber.org/zap"
 )
 
 func HealthCheck(ctx context.Context, s interfaces.ServerPool) {
@@ -32,8 +31,8 @@ func HealthCheck(ctx context.Context, s interfaces.ServerPool) {
 		}
 		utils.Logger.Debug(
 			"URL Status",
-			zap.String("URL", b.GetURL().String()),
-			zap.String("status", status),
+			"URL", b.GetURL().String(),
+			"status", status,
 		)
 	}
 }
@@ -67,6 +66,6 @@ func NewServerPool(strategy LBStrategy) (interfaces.ServerPool, error) {
 			current:  0,
 		}, nil
 	default:
-		return nil, fmt.Errorf("Invalid strategy")
+		return nil, fmt.Errorf("invalid strategy")
 	}
 }

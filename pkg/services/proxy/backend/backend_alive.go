@@ -6,14 +6,13 @@ import (
 	"net/url"
 
 	"github.com/letronghoangminh/reproxy/pkg/utils"
-	"go.uber.org/zap"
 )
 
 func IsBackendAlive(ctx context.Context, aliveChannel chan bool, u *url.URL) {
 	var d net.Dialer
 	conn, err := d.DialContext(ctx, "tcp", u.Host)
 	if err != nil {
-		utils.Logger.Debug("Site unreachable", zap.Error(err))
+		utils.Logger.Debug("Site unreachable")
 		aliveChannel <- false
 		return
 	}

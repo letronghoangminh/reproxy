@@ -9,7 +9,6 @@ import (
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
-	"go.uber.org/zap"
 )
 
 var (
@@ -17,16 +16,16 @@ var (
 )
 
 func retrieveConfig(w http.ResponseWriter, r *http.Request) {
-	utils.Logger.Info("requesting for retrieving server config", zap.String("method", r.Method), zap.String("path", r.URL.Path))
+	utils.Logger.Info("requesting for retrieving server config", "method", r.Method, "path", r.URL.Path)
 
 	jsonCfg, err := json.MarshalIndent(cfg, "", "  ")
 	if err != nil {
-		utils.Logger.Error("error occurred while marshalling config", zap.Error(err))
+		utils.Logger.Error("error occurred while marshalling config", "error", err)
 		http.Error(w, "error occurred while marshalling config", http.StatusInternalServerError)
 		return
 	}
 
-	w.Write(jsonCfg)
+	_, _ = w.Write(jsonCfg)
 }
 
 func DefaultControllerServe(ctx context.Context, wg *sync.WaitGroup) {
@@ -35,7 +34,7 @@ func DefaultControllerServe(ctx context.Context, wg *sync.WaitGroup) {
 
 	http.HandleFunc("/config", retrieveConfig)
 
-	utils.Logger.Info("default controller is serving", zap.Int("port", port))
+	utils.Logger.Info("default controller is serving", "port", port)
 
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%v", port),
@@ -44,17 +43,17 @@ func DefaultControllerServe(ctx context.Context, wg *sync.WaitGroup) {
 
 	wg.Add(1)
 	go func() {
-		utils.Logger.Info("serving default controller", zap.Int("port", port))
+		utils.Logger.Info("serving default controller", "port", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			utils.Logger.Error(fmt.Sprintf("error occurred while serving default controller on port %d", port), zap.Error(err))
+			utils.Logger.Error(fmt.Sprintf("error occurred while serving default controller on port %d", port), "error", err)
 		}
 	}()
 
 	go func() {
 		<-ctx.Done()
-		utils.Logger.Info("shutting down default controller", zap.Int("port", port))
+		utils.Logger.Info("shutting down default controller", "port", port)
 		if err := server.Shutdown(context.Background()); err != nil {
-			utils.Logger.Error(fmt.Sprintf("error shutting down default controller on port %d", port), zap.Error(err))
+			utils.Logger.Error(fmt.Sprintf("error shutting down default controller on port %d", port), "error", err)
 		}
 		wg.Done()
 	}()

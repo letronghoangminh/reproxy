@@ -14,7 +14,6 @@ import (
 	proxy "github.com/letronghoangminh/reproxy/pkg/services/proxy"
 	"github.com/letronghoangminh/reproxy/pkg/services/static"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
-	"go.uber.org/zap"
 )
 
 type ListenerController struct {
@@ -42,7 +41,7 @@ func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 
 		_, ok := listenerControllers[port]
 		if !ok {
-			utils.Logger.Info("initializing new listener controller", zap.Int("port", port))
+			utils.Logger.Info("initializing new listener controller", "port", port)
 			listenerControllers[port] = ListenerController{
 				Server:        http.NewServeMux(),
 				Port:          port,
@@ -72,17 +71,17 @@ func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 
 		wg.Add(1)
 		go func() {
-			utils.Logger.Info("serving new controller", zap.Int("port", port))
+			utils.Logger.Info("serving new controller", "port", port)
 			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				utils.Logger.Error(fmt.Sprintf("error occurred while serving controller on port %d", port), zap.Error(err))
+				utils.Logger.Error(fmt.Sprintf("error occurred while serving controller on port %d", port), "error", err)
 			}
 		}()
 
 		go func() {
 			<-ctx.Done()
-			utils.Logger.Info("shutting down controller", zap.Int("port", port))
+			utils.Logger.Info("shutting down controller", "port", port)
 			if err := server.Shutdown(context.Background()); err != nil {
-				utils.Logger.Error(fmt.Sprintf("error shutting down controller on port %d", port), zap.Error(err))
+				utils.Logger.Error(fmt.Sprintf("error shutting down controller on port %d", port), "error", err)
 			}
 			wg.Done()
 		}()

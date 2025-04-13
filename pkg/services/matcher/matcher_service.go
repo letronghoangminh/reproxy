@@ -79,7 +79,7 @@ func (m *RequestMatcher) matchPath(r *http.Request, handler *config.HandlerConfi
 }
 
 func (m *RequestMatcher) matchHeaders(r *http.Request, handler *config.HandlerConfig) bool {
-	if handler.Matchers.Headers == nil || len(handler.Matchers.Headers) == 0 {
+	if len(handler.Matchers.Headers) == 0 {
 		return true
 	}
 
@@ -93,7 +93,7 @@ func (m *RequestMatcher) matchHeaders(r *http.Request, handler *config.HandlerCo
 }
 
 func (m *RequestMatcher) matchQuery(r *http.Request, handler *config.HandlerConfig) bool {
-	if handler.Matchers.Query == nil || len(handler.Matchers.Query) == 0 {
+	if len(handler.Matchers.Query) == 0 {
 		return true
 	}
 
@@ -113,7 +113,7 @@ func (m *RequestMatcher) matchClientCIDR(r *http.Request, handler *config.Handle
 
 	clientIP, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		m.logger.Error("Failed to parse client IP", "remote_addr", r.RemoteAddr, "error", err)
+		m.logger.Error("Failed to parse client IP", "remote_addr", r.RemoteAddr)
 		clientIP = r.RemoteAddr // Fall back to using the whole string
 	}
 
@@ -126,7 +126,7 @@ func (m *RequestMatcher) matchClientCIDR(r *http.Request, handler *config.Handle
 	for _, cidr := range handler.Matchers.ClientCIDRs {
 		_, ipNet, err := net.ParseCIDR(cidr)
 		if err != nil {
-			m.logger.Error("Invalid CIDR", "cidr", cidr, "error", err)
+			m.logger.Error("Invalid CIDR", "cidr", cidr)
 			continue
 		}
 

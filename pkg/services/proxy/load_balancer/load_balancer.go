@@ -6,8 +6,10 @@ import (
 	"github.com/letronghoangminh/reproxy/pkg/interfaces"
 )
 
+type RetryCount string
+
 const (
-	RETRY_COUNT string = "retry_count"
+	RETRY_COUNT RetryCount = "retry_count"
 )
 
 func AllowRetry(r *http.Request, maxRetries int) bool {

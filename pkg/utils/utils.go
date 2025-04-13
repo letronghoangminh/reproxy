@@ -52,14 +52,14 @@ func GenerateRequestID() string {
 
 // IsPathSafe checks if the given path is safe (doesn't contain traversal attempts)
 func IsPathSafe(path string) bool {
-	return !(path == ".." ||
-		path == "." ||
-		path == "/" ||
-		path == "" ||
-		path == "\\" ||
-		path == "~" ||
-		path == "*" ||
-		path == "|" ||
-		path == ">" ||
-		path == "<")
+	return path != ".." &&
+		path != "." &&
+		path != "/" &&
+		path != "" &&
+		path != "\\" &&
+		path != "~" &&
+		path != "*" &&
+		path != "|" &&
+		path != ">" &&
+		path != "<"
 }

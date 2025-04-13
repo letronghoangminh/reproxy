@@ -14,9 +14,8 @@ import (
 	"github.com/letronghoangminh/reproxy/pkg/services/dns"
 	"github.com/letronghoangminh/reproxy/pkg/services/proxy/backend"
 	loadbalancer "github.com/letronghoangminh/reproxy/pkg/services/proxy/load_balancer"
-	"github.com/letronghoangminh/reproxy/pkg/services/proxy/server_pool"
+	serverpool "github.com/letronghoangminh/reproxy/pkg/services/proxy/server_pool"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
-	"go.uber.org/zap"
 )
 
 // Reverse proxy implementation credits to https://github.com/leonardo5621/golang-load-balancer
@@ -29,7 +28,7 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 	for _, handler := range handlers {
 		serverPool, err := serverpool.NewServerPool(serverpool.GetLBStrategy(handler.ReverseProxy.LoadBalancing.Strategy))
 		if err != nil {
-			utils.Logger.Error("error occurred while creating server pool", zap.Error(err))
+			utils.Logger.Error("error occurred while creating server pool", "error", err)
 			return
 		}
 
@@ -38,31 +37,30 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 		staticUpstreams := handler.ReverseProxy.Upstreams.Static
 		dynamicUpstreams, dnsErr := dns.GetDynamicUpstreams(handler.ReverseProxy.Upstreams.Dynamic)
 		if dnsErr != nil {
-			utils.Logger.Error("error resolving dynamic upstreams", zap.Error(dnsErr))
+			utils.Logger.Error("error resolving dynamic upstreams", "error", dnsErr)
 			dynamicUpstreams = []string{}
 		}
 
 		for _, u := range append(staticUpstreams, dynamicUpstreams...) {
 			endpoint, err := url.Parse(u)
 			if err != nil {
-				utils.Logger.Fatal(err.Error(), zap.String("URL", u))
+				utils.Logger.Fatal(err.Error(), "URL", u)
 			}
 
 			rp := httputil.NewSingleHostReverseProxy(endpoint)
 
 			backendServer := backend.NewBackend(endpoint, rp)
 			rp.ErrorHandler = func(writer http.ResponseWriter, request *http.Request, e error) {
-				utils.Logger.Error("error handling the request",
-					zap.String("host", endpoint.Host),
-					zap.Error(e),
+				utils.Logger.Debug("error handling the request",
+					"host", endpoint.Host,
 				)
 				backendServer.SetAlive(false)
 
 				if !loadbalancer.AllowRetry(request, handler.ReverseProxy.LoadBalancing.Retries) {
 					utils.Logger.Info(
 						"Max retry attempts reached, terminating",
-						zap.String("address", request.RemoteAddr),
-						zap.String("path", request.URL.Path),
+						"address", request.RemoteAddr,
+						"path", request.URL.Path,
 					)
 					http.Error(writer, "Service not available", http.StatusServiceUnavailable)
 					return
@@ -75,17 +73,17 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 
 				utils.Logger.Info(
 					"Attempting retry",
-					zap.String("address", request.RemoteAddr),
-					zap.String("URL", request.URL.Path),
-					zap.Bool("retry", true),
-					zap.Int("retry_count", currentCount+1),
+					"address", request.RemoteAddr,
+					"URL", request.URL.Path,
+					"retry", true,
+					"retry_count", currentCount+1,
 				)
 
 				sleepDuration := handler.ReverseProxy.LoadBalancing.TryInterval
 				if sleepDuration == 0 {
 					sleepDuration = 5
 				}
-				time.Sleep(time.Duration(handler.ReverseProxy.LoadBalancing.TryInterval) * time.Second)
+				time.Sleep(time.Duration(sleepDuration) * time.Second)
 
 				loadBalancer.Serve(
 					writer,
@@ -158,7 +156,7 @@ func replaceHeaderValue(r *http.Request, value string) string {
 
 	result := value
 	for placeholder, replacement := range replacements {
-		result = strings.Replace(result, placeholder, replacement, -1)
+		result = strings.ReplaceAll(result, placeholder, replacement)
 	}
 
 	return result
@@ -171,7 +169,7 @@ func rewritePath(r *http.Request, rewrite string) {
 
 	rewrite = strings.TrimPrefix(rewrite, "/")
 	rewrite = strings.TrimSuffix(rewrite, "/")
-	newPath := strings.Replace(rewrite, "{path}", r.URL.Path, -1)
+	newPath := strings.ReplaceAll(rewrite, "{path}", r.URL.Path)
 
 	r.URL.Path = newPath
 }

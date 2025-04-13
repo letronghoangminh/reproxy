@@ -19,8 +19,9 @@ import (
 
 var (
 	configPath = flag.String("config", "config/config.yaml", "path to the config file")
-	logFormat  = flag.String("log-format", "json", "log format (json or console)")
-	version    = flag.Bool("version", false, "print version information and exit")
+	// logFormat is currently unused but kept for future use
+	_       = flag.String("log-format", "json", "log format (json or console)")
+	version = flag.Bool("version", false, "print version information and exit")
 
 	buildVersion = "dev"
 	buildDate    = "unknown"
@@ -59,7 +60,7 @@ func main() {
 	utils.Logger = appLogger
 
 	defer func() {
-		appLogger.Sync();
+		_ = appLogger.Sync()
 	}()
 
 	appLogger.Info("Starting Reproxy",

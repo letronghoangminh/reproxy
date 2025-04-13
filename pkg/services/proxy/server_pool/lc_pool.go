@@ -13,6 +13,9 @@ type lcServerPool struct {
 }
 
 func (s *lcServerPool) GetNextValidPeer(r *http.Request) interfaces.Backend {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
 	var leastConnectedPeer interfaces.Backend
 	for _, b := range s.backends {
 		if b.IsAlive() {

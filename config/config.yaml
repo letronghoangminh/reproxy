@@ -31,8 +31,8 @@ listeners:
                 value: "http://example.com:8080"
           load_balancing:
             strategy: sticky
-            retries: 5
-            try_interval: 10
+            retries: 3
+            try_interval: 5
           add_headers:
             X-Real-IP: "{remote_ip}"
           remove_headers:
