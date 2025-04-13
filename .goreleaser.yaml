@@ -2,6 +2,8 @@
 # Configuration for GoReleaser
 # See https://goreleaser.com for more information
 
+version: 2
+
 project_name: reproxy
 
 before:
@@ -26,22 +28,9 @@ builds:
       - -X main.buildDate={{.Date}}
     binary: reproxy
 
-archives:
-  - format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
-    name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}"
-    files:
-      - README.md
-      - config/config.yaml
-
 checksum:
   name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
   algorithm: sha256
-
-snapshot:
-  name_template: "{{ incpatch .Version }}-next"
 
 changelog:
   sort: asc
@@ -61,20 +50,6 @@ release:
   prerelease: auto
   draft: false
   name_template: "Reproxy {{.Tag}}"
-
-dockers:
-  - image_templates:
-      - "letronghoangminh/reproxy:latest"
-      - "letronghoangminh/reproxy:{{ .Tag }}"
-    dockerfile: Dockerfile
-    build_flag_templates:
-      - "--pull"
-      - "--label=org.opencontainers.image.created={{.Date}}"
-      - "--label=org.opencontainers.image.title={{.ProjectName}}"
-      - "--label=org.opencontainers.image.revision={{.FullCommit}}"
-      - "--label=org.opencontainers.image.version={{.Tag}}"
-    extra_files:
-      - config/config.yaml
 
 nfpms:
   - file_name_template: "{{ .ProjectName }}_{{ .Tag }}_{{ .Os }}_{{ .Arch }}"
