@@ -2,6 +2,7 @@
 package controllers
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"net"
@@ -21,6 +22,15 @@ type ListenerController struct {
 	Server        *http.ServeMux
 	Port          int
 	TargetHandler map[string][]*config.HandlerConfig
+}
+
+type gzipResponseWriter struct {
+	http.ResponseWriter
+	Writer *gzip.Writer
+}
+
+func (gzw *gzipResponseWriter) Write(b []byte) (int, error) {
+	return gzw.Writer.Write(b)
 }
 
 var (
@@ -48,7 +58,7 @@ func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 				Port:          port,
 				TargetHandler: map[string][]*config.HandlerConfig{},
 			}
-			listenerControllers[port].Server.HandleFunc("/", defaultHandler)
+			listenerControllers[port].Server.HandleFunc("/", gzipHandler(defaultHandler))
 		}
 
 		handlerPointers := make([]*config.HandlerConfig, len(handlers))
@@ -86,6 +96,31 @@ func InitListenerControllers(ctx context.Context, wg *sync.WaitGroup) {
 			}
 			wg.Done()
 		}()
+	}
+}
+
+func gzipHandler(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next(w, r)
+			return
+		}
+
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
+			next(w, r)
+			return
+		}
+		defer gz.Close()
+
+		gzw := &gzipResponseWriter{
+			ResponseWriter: w,
+			Writer:         gz,
+		}
+
+		w.Header().Set("Content-Encoding", "gzip")
+
+		next(gzw, r)
 	}
 }
 

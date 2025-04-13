@@ -58,6 +58,12 @@ func (b *backend) Serve(rw http.ResponseWriter, req *http.Request) {
 		http.SetCookie(rw, cookie)
 	}
 
+	if b.reverseProxy.ModifyResponse == nil {
+		b.reverseProxy.ModifyResponse = func(resp *http.Response) error {
+			resp.Header.Set("X-Powered-By", "Reproxy")
+			return nil
+		}
+	}
 	b.reverseProxy.ServeHTTP(rw, req)
 }
 

@@ -26,9 +26,9 @@ listeners:
           rewrite: "/rewrite/{path}"
           upstreams: 
             static: ["http://localhost:8081", "http://localhost:8082", "http://localhost:8083"]
-            dynamic:
-              - type: A
-                value: "http://example.com:8080"
+            # dynamic:
+            #   - type: A
+            #     value: "http://example.com:8080"
           load_balancing:
             strategy: sticky
             retries: 3

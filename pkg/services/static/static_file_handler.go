@@ -63,6 +63,7 @@ func (h *StaticFileHandler) ServeFile(w http.ResponseWriter, r *http.Request, cf
 	h.addSecurityHeaders(w)
 
 	h.logger.Debug("Serving static file", "file_path", filePath)
+	addPoweredByHeader(w)
 
 	http.ServeFile(w, r, filePath)
 	return nil
@@ -89,6 +90,10 @@ func (h *StaticFileHandler) addSecurityHeaders(w http.ResponseWriter) {
 	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 }
 
+func addPoweredByHeader(w http.ResponseWriter) {
+	w.Header().Set("X-Powered-By", "Reproxy")
+}
+
 func (h *StaticFileHandler) ServeStaticResponse(w http.ResponseWriter, r *http.Request, cfg *config.HandlerConfig) error {
 	statusCode := cfg.StaticResponse.StatusCode
 	if statusCode == 0 {
@@ -98,6 +103,7 @@ func (h *StaticFileHandler) ServeStaticResponse(w http.ResponseWriter, r *http.R
 	h.addSecurityHeaders(w)
 
 	w.WriteHeader(statusCode)
+	addPoweredByHeader(w)
 	_, err := w.Write([]byte(cfg.StaticResponse.Body))
 	if err != nil {
 		h.logger.Error("Error writing response", "error", err)
