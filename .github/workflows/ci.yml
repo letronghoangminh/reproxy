@@ -29,13 +29,10 @@ jobs:
       - name: Verify dependencies
         run: go mod verify
 
-      - name: Install and run golangci-lint
-        uses: golangci/golangci-lint-action@v3
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v7
         with:
-          version: latest
-
-      - name: Run golangci-lint
-        run: golangci-lint run --config .golangci.yaml
+          version: v2.0
 
   build:
     name: Build
