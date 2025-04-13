@@ -1,3 +1,4 @@
+// Package dns provides functionality to resolve DNS records and cache the results.
 package dns
 
 import (

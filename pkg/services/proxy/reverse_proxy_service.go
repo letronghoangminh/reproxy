@@ -1,4 +1,5 @@
-package reverseproxy
+// Package proxy provides functionality to handle reverse proxy requests and load balancing.
+package proxy
 
 import (
 	"context"
@@ -66,7 +67,7 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 					return
 				}
 
-				currentCount, ok := request.Context().Value(loadbalancer.RETRY_COUNT).(int)
+				currentCount, ok := request.Context().Value(loadbalancer.Count).(int)
 				if !ok {
 					currentCount = 0
 				}
@@ -88,7 +89,7 @@ func StartLoadBalancers(ctx context.Context, handlers []*config.HandlerConfig) {
 				loadBalancer.Serve(
 					writer,
 					request.WithContext(
-						context.WithValue(request.Context(), loadbalancer.RETRY_COUNT, currentCount+1),
+						context.WithValue(request.Context(), loadbalancer.Count, currentCount+1),
 					),
 				)
 			}

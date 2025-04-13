@@ -1,3 +1,4 @@
+// Package backend provides functionality to manage backend servers for a reverse proxy.
 package backend
 
 import (

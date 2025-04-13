@@ -1,7 +1,8 @@
+// Package static provides functionality to serve static files and handle static responses.
 package static
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"os"
 	"path"
@@ -29,7 +30,7 @@ func NewStaticFileHandler(logger interfaces.Logger) *StaticFileHandler {
 
 func (h *StaticFileHandler) ServeFile(w http.ResponseWriter, r *http.Request, cfg *config.HandlerConfig) error {
 	if cfg.StaticFiles.Root == "" {
-		return fmt.Errorf("static file root is not configured")
+		return errors.New("static file root is not configured")
 	}
 
 	requestPath := strings.TrimPrefix(r.URL.Path, cfg.Matchers.Path)
@@ -56,7 +57,7 @@ func (h *StaticFileHandler) ServeFile(w http.ResponseWriter, r *http.Request, cf
 	if fileInfo.IsDir() {
 		h.logger.Debug("Attempted to access directory", "path", filePath)
 		http.Error(w, "Forbidden", http.StatusForbidden)
-		return fmt.Errorf("attempted to access directory: %s", filePath)
+		return errors.New("attempted to access directory: " + filePath)
 	}
 
 	h.addSecurityHeaders(w)
@@ -73,7 +74,7 @@ func (h *StaticFileHandler) sanitizePath(requestPath string) (string, error) {
 	cleanPath := path.Clean(requestPath)
 
 	if cleanPath == ".." || strings.HasPrefix(cleanPath, "../") || strings.Contains(cleanPath, "/../") {
-		return "", fmt.Errorf("invalid path: %s", requestPath)
+		return "", errors.New("invalid path: " + requestPath)
 	}
 
 	return cleanPath, nil

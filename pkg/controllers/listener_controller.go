@@ -1,3 +1,4 @@
+// Package controllers provides functionality to manage HTTP listeners and route requests to appropriate handlers.
 package controllers
 
 import (
@@ -11,7 +12,7 @@ import (
 
 	"github.com/letronghoangminh/reproxy/pkg/config"
 	"github.com/letronghoangminh/reproxy/pkg/services/matcher"
-	proxy "github.com/letronghoangminh/reproxy/pkg/services/proxy"
+	"github.com/letronghoangminh/reproxy/pkg/services/proxy"
 	"github.com/letronghoangminh/reproxy/pkg/services/static"
 	"github.com/letronghoangminh/reproxy/pkg/utils"
 )
@@ -92,7 +93,6 @@ func combineListener() map[string][]config.HandlerConfig {
 	listeners := map[string][]config.HandlerConfig{}
 
 	for _, listenerConfig := range cfg.Listeners {
-
 		for _, host := range listenerConfig.Host {
 			handlers := listenerConfig.Handlers
 

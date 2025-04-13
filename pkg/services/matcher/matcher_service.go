@@ -1,3 +1,4 @@
+// Package matcher provides functionality to match incoming HTTP requests against a set of predefined handlers.
 package matcher
 
 import (

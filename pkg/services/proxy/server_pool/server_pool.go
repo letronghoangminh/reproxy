@@ -1,8 +1,9 @@
+// Package serverpool provides functionality to manage a pool of backend servers for load balancing.
 package serverpool
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/letronghoangminh/reproxy/pkg/interfaces"
@@ -66,6 +67,6 @@ func NewServerPool(strategy LBStrategy) (interfaces.ServerPool, error) {
 			current:  0,
 		}, nil
 	default:
-		return nil, fmt.Errorf("invalid strategy")
+		return nil, errors.New("invalid strategy")
 	}
 }

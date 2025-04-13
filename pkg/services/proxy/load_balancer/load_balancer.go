@@ -1,3 +1,4 @@
+// Package loadbalancer provides functionality to handle load balancing for reverse proxy requests.
 package loadbalancer
 
 import (
@@ -9,11 +10,11 @@ import (
 type RetryCount string
 
 const (
-	RETRY_COUNT RetryCount = "retry_count"
+	Count RetryCount = "retry_count"
 )
 
 func AllowRetry(r *http.Request, maxRetries int) bool {
-	if retryCount := r.Context().Value(RETRY_COUNT); retryCount != nil {
+	if retryCount := r.Context().Value(Count); retryCount != nil {
 		if count, ok := retryCount.(int); ok {
 			return count < maxRetries
 		}

@@ -1,131 +1,152 @@
-# .golangci.yaml - Configuration for golangci-lint
-version: 2
-
-# Options for analysis running
+version: "2"
 run:
-  # Timeout for analysis, e.g. 30s, 5m, default is 1m
-  timeout: 5m
-  
-  # Include test files or not, default is true
-  tests: true
-  
-  # Default concurrency is a available CPU number
-  concurrency: 4
-  
-  # Which dirs to skip: issues from them won't be reported
-  skip-dirs:
-    - vendor
-    - tmp
-  
-  # Allow multiple parallel golangci-lint instances
+  concurrency: 1
+  go: 1.24.0
   allow-parallel-runners: false
-  
-  # Maximum issues count per one linter
-  max-issues-per-linter: 50
-  
-  # Maximum count of issues with the same text
-  max-same-issues: 10
-
-# Output configuration options
-output:
-  # Format for the output: colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
-  format: colored-line-number
-  
-  # Print lines of code with issue
-  print-issued-lines: true
-  
-  # Print linter name in the end of issue text
-  print-linter-name: true
-
-# All available settings of specific linters
-linters-settings:
-  dupl:
-    # Tokens count to trigger issue, default is 150
-    threshold: 100
-  errcheck:
-    # Report about not checking errors in type assertions and type switches (default: false)
-    check-type-assertions: true
-    # Report error handling issues marked with "// nolint:errcheck"
-    check-type-switches: true
-  gocyclo:
-    # Minimal code complexity to report
-    min-complexity: 15
-  goimports:
-    # Put imports beginning with prefix after 3rd-party packages
-    local-prefixes: github.com/letronghoangminh/reproxy
-  govet:
-    # Report about shadowed variables
-    check-shadowing: true
-    # Enable all analyzers
-    enable-all: true
-    # Disable analyzers by name
-    disable:
-      - fieldalignment
-  lll:
-    # Max line length, lines longer will be reported
-    line-length: 120
-    # Tab width in spaces
-    tab-width: 4
-  misspell:
-    # Correct spellings using locale preferences for US or UK
-    locale: US
-  nakedret:
-    # Make an issue if func has more than this number of lines, 0 means no limit
-    max-func-lines: 30
-  unused:
-    # Treat code as a program (not a library)
-    check-exported: false
-
-# Configure formatters
+  allow-serial-runners: true
+linters:
+  default: none
+  enable:
+    - asciicheck
+    - bodyclose
+    - dogsled
+    - errcheck
+    - errorlint
+    - goconst
+    - gocritic
+    - gocyclo
+    - goprintffuncname
+    - govet
+    - importas
+    - ineffassign
+    - misspell
+    - nakedret
+    - nilerr
+    - nolintlint
+    - prealloc
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - usestdlibvars
+    - whitespace
+  settings:
+    goconst:
+      match-constant: false
+      min-len: 5
+      min-occurrences: 10
+    gocyclo:
+      min-complexity: 50
+    revive:
+      severity: error
+      enable-all-rules: true
+      rules:
+        - name: add-constant
+          disabled: true
+        - name: argument-limit
+          disabled: true
+        - name: cognitive-complexity
+          disabled: true
+        - name: confusing-naming
+          disabled: true
+        - name: cyclomatic
+          disabled: true
+        - name: early-return
+          disabled: true
+        - name: enforce-map-style
+          disabled: true
+        - name: exported
+          disabled: true
+        - name: file-header
+          disabled: true
+        - name: flag-parameter
+          disabled: true
+        - name: function-length
+          disabled: true
+        - name: get-return
+          disabled: true
+        - name: if-return
+          disabled: true
+        - name: import-shadowing
+          disabled: true
+        - name: line-length-limit
+          disabled: true
+        - name: modifies-parameter
+          disabled: true
+        - name: nested-structs
+          disabled: true
+        - name: optimize-operands-order
+          disabled: true
+        - name: unused-parameter
+          disabled: true
+        - name: unused-receiver
+          disabled: true
+        - name: use-any
+          disabled: true
+        - name: unchecked-type-assertion
+          disabled: true
+        - name: function-result-limit
+          disabled: true
+        - name: deep-exit
+          disabled: true
+        - name: superfluous-else
+          disabled: true
+        - name: confusing-results
+          disabled: true
+        - name: defer
+          disabled: true
+        - name: var-naming
+          disabled: true
+        - name: max-public-structs
+          disabled: true
+        - name: comment-spacings
+          disabled: true
+        - name: struct-tag
+          disabled: true
+        - name: unhandled-error
+          disabled: true
+        - name: error-strings
+          disabled: true
+        - name: max-control-nesting
+          arguments:
+            - 6
+    staticcheck:
+      checks:
+        - -ST1000
+        - -ST1003
+        - all
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - goconst
+        path: (.+)_test\.go
+    paths:
+      - .*\.zz_generated\..*
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
 formatters:
   enable:
+    - gci
     - gofmt
     - goimports
-  disable:
-    - gci # We use goimports instead
-
-# Enable specific linters - all linters are enabled by default
-linters:
-  # Enable all linters by default, then disable the ones we don't want
-  disable-all: false
-  # We'll disable specific linters below
-
-# Don't output issues on excluded files even if they are found
-issues:
-  # Maximum count of issues with the same text
-  max-same-issues: 10
-  
-  # Maximum issues count per one linter. If set to 0, no limit.
-  max-issues-per-linter: 30
-  
-  # List of regexps of issue texts to exclude
-  exclude:
-    - "should have a package comment"
-    - "should have comment"
-    - "comment on exported"
-    - "var-naming: don't use an underscore in package name"
-    - "Error return value of .* is not checked"
-    - "ineffectual assignment to"
-
-  # Excluding configuration per-path, per-linter, per-text and per-source
-  exclude-rules:
-    # Exclude some linters from running on tests files.
-    - path: _test\.go
-      linters:
-        - errcheck
-        - ineffassign
-        - staticcheck
-    
-    # Exclude linters from generated files
-    - path: pkg/services/proxy/
-      linters:
-        - goimports
-        - staticcheck
-        - ineffassign
-        - unused
-
-  # Exclude some directories from being analyzed
-  exclude-dirs:
-    - vendor
-
-# Severity configuration - removed in golangci-lint v2
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - blank
+        - dot
+      custom-order: true
+  exclusions:
+    generated: lax
+    paths:
+      - .*\.zz_generated\..*
+      - third_party$
+      - builtin$
+      - examples$

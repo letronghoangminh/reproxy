@@ -1,3 +1,4 @@
+// Package config provides functionality to load and validate configuration files for the Reproxy application.
 package config
 
 import (
