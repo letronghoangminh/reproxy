@@ -12,26 +12,20 @@
 
 ## ✨ Features
 
-- 📝 **Declarative YAML Configuration**: Easy to set up with a single YAML file
-- 🌐 **Multiple Host/Port Binding**: Route traffic based on different hosts and ports
-- 📋 **Static Response Handlers**: Return fixed responses for specific paths
-- 📂 **Static File Serving**: Serve files from local filesystem with security protections
-- 🔄 **Reverse Proxy with Load Balancing**: Distribute traffic across multiple backends
-- ⚖️ **Load Balancing Strategies**:
-  - 🔄 Round Robin (default)
-  - 📊 Least Connections
-  - 🎲 Random
-  - 🔍 IP Hash
-  - 🔗 URI Hash 
-  - 🍪 Sticky Sessions
-- 💓 **Health Checking**: Automatic health monitoring of backend servers
-- 📝 **Header Manipulation**: Add or remove HTTP headers
-- 🛣️ **Path-based Routing**: Route requests based on URL paths
-- ✏️ **URL Rewriting**: Modify request URLs before proxying
-- 🔄 **Dynamic Upstreams**: Configure upstream servers dynamically via DNS
-- 🎯 **Advanced Request Matching**: Match requests based on path, method, headers, query parameters, and client IP
-- 🔒 **Security Headers**: Automatically adds security headers to responses
-- 🔍 **Request Tracing**: Adds request IDs for better debugging and monitoring
+- 📝 **Declarative Configuration**: Simple YAML configuration with multiple host/port binding
+- 🌐 **Request Handling**:
+    - 📋 Static responses, file serving with security protections
+    - 🎯 Advanced matching (path, method, headers, query params, client IP)
+    - 🛣️ Path-based routing and URL rewriting
+- 🔄 **Reverse Proxy**:
+    - ⚖️ Multiple load balancing strategies (Round Robin, Least Connections, Random, IP/URI Hash, Sticky Sessions)
+    - 🔌 Static and dynamic (DNS-based) upstreams
+    - 💓 Automatic health checking of backend servers
+- 🔒 **Response Processing**:
+    - 📝 Header manipulation (add/remove)
+    - 🔒 Automatic security headers
+    - 📦 Response compression (Gzip)
+    - 🔍 Request tracing
 
 ## 🔧 Installation
 
@@ -203,9 +197,8 @@ When adding headers, the following variables can be used:
 | {user_agent} | 🔍 Client's User-Agent |
 
 ## 🔮 Upcoming Features
-- 🔒 Automatic HTTPS via Let's Encrypt or local CA certificates
-- 🚀 HTTP/1.1 and HTTP/2 support
-- 📦 Response compression and OLTP
+- 🔒 Automatic HTTPS via Let's Encrypt or local CA certificates (with HTTP/2 support)
+- 📦 OLTP
 
 ## 📜 License
 

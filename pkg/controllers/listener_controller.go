@@ -111,7 +111,12 @@ func gzipHandler(next http.HandlerFunc) http.HandlerFunc {
 			next(w, r)
 			return
 		}
-		defer gz.Close()
+		defer func() {
+			err := gz.Close()
+			if err != nil {
+				utils.Logger.Error("Failed to close gzip writer", "error", err)
+			}
+		}()
 
 		gzw := &gzipResponseWriter{
 			ResponseWriter: w,
