@@ -196,10 +196,6 @@ When adding headers, the following variables can be used:
 | {method} | 📤 Request method |
 | {user_agent} | 🔍 Client's User-Agent |
 
-## 🔮 Upcoming Features
-- 🔒 Automatic HTTPS via Let's Encrypt or local CA certificates (with HTTP/2 support)
-- 📦 OLTP
-
 ## 📜 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
